@@ -35,6 +35,7 @@ export ROS_PORT_SIM=11311
 export GAZEBO_RESOURCE_PATH=$GAZEBO_RESOURCE_PATH:~/$your_ros_ws$/src/MAERL/pkgs/multi_robot_scenario/launch
 export GAZEBO_MODEL_PATH=$GAZEBO_MODEL_PATH:/home/$username$/.gazebo/models/small_house/models/
 ```
+### To run
 - Launch training script.
 ```
 python train.py
