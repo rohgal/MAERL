@@ -28,13 +28,13 @@ pip install torch==1.11.0+cu113 torchvision==0.12.0+cu113 torchaudio==0.11.0 --e
 ```
 - Install spconv which fits with your CUDA.
 [spconv_link](https://github.com/traveller59/spconv.git)
-- Import small_house models to gazebo resource path.
 - Write below env params on your ~/.bashrc
 ```
 export ROS_PORT_SIM=11311
 export GAZEBO_RESOURCE_PATH=$GAZEBO_RESOURCE_PATH:~/$your_ros_ws$/src/MAERL/pkgs/multi_robot_scenario/launch
 export GAZEBO_MODEL_PATH=$GAZEBO_MODEL_PATH:/home/$username$/.gazebo/models/small_house/models/
 ```
+- Copy /small_house directory to GAZEBO_MODEL_PATH.
 ### To run
 - Launch training script.
 ```
