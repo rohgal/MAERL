@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+
+  <arg name="map_path"/>
+
+  <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_path)" />
+  <node name="distance_server" pkg="map_distance_server" type="map_distance_node.py" output="screen" />
+
+</launch>
