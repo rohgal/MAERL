@@ -1,0 +1,245 @@
+{"episode_reward": 0.0, "episode": 1.0, "duration": 12.429442644119263, "step": 80}
+{"episode_reward": -104.68561638146639, "episode": 2.0, "batch_reward": -0.037353515625, "rec_loss": 0.18804112076759338, "duration": 5.491276979446411, "step": 120}
+{"episode_reward": -102.46834689565003, "episode": 3.0, "duration": 8.206737279891968, "step": 174}
+{"episode_reward": -103.74559206143022, "episode": 4.0, "batch_reward": 0.02167510986328125, "rec_loss": 0.054953040555119514, "duration": 30.905736207962036, "step": 367}
+{"episode_reward": -104.91075712628663, "episode": 5.0, "batch_reward": 0.0989990234375, "rec_loss": 0.030261851847171783, "duration": 5.589775800704956, "step": 407}
+{"episode_reward": -108.06548653542995, "episode": 6.0, "duration": 2.3702292442321777, "step": 424}
+{"episode_reward": -103.6634901612997, "episode": 7.0, "duration": 5.768875598907471, "step": 459}
+{"episode_reward": -101.69197314605117, "episode": 8.0, "duration": 2.4076435565948486, "step": 469}
+{"episode_reward": -101.49531444348395, "episode": 9.0, "duration": 2.703908920288086, "step": 488}
+{"episode_reward": -101.37148589640856, "episode": 10.0, "batch_reward": -0.28369140625, "rec_loss": 0.021245740354061127, "duration": 1.9861984252929688, "step": 502}
+{"episode_reward": -102.53607364743948, "episode": 11.0, "duration": 11.655112743377686, "step": 581}
+{"episode_reward": -105.56624556705356, "episode": 12.0, "batch_reward": -0.15576171875, "rec_loss": 0.017164364457130432, "duration": 14.149001598358154, "step": 685}
+{"episode_reward": -101.03050026297569, "episode": 13.0, "batch_reward": -0.12213134765625, "rec_loss": 0.015318957157433033, "duration": 3.383023500442505, "step": 709}
+{"episode_reward": -103.19108574837446, "episode": 14.0, "duration": 5.353043794631958, "step": 748}
+{"episode_reward": -105.97354291379452, "episode": 15.0, "duration": 2.5385138988494873, "step": 766}
+{"episode_reward": -102.69656594097614, "episode": 16.0, "batch_reward": -0.2025146484375, "rec_loss": 0.01371157169342041, "duration": 11.071233034133911, "step": 831}
+{"episode_reward": -110.12730642594397, "episode": 17.0, "batch_reward": -0.04412841796875, "rec_loss": 0.012544670142233372, "duration": 14.593238353729248, "step": 931}
+{"episode_reward": -103.30377425253391, "episode": 18.0, "duration": 3.423875570297241, "step": 956}
+{"episode_reward": -104.14084422960877, "episode": 19.0, "batch_reward": -0.22509765625, "rec_loss": 0.011955488473176956, "duration": 8.476776123046875, "step": 1011}
+{"episode_reward": -106.78315276652575, "episode": 20.0, "duration": 10.858150005340576, "step": 1085}
+{"episode_reward": -101.6959536485374, "episode": 21.0, "batch_reward": 0.00402069091796875, "rec_loss": 0.011379003524780273, "duration": 8.872665882110596, "step": 1142}
+{"episode_reward": -106.70925301872194, "episode": 22.0, "batch_reward": -0.22216796875, "rec_loss": 0.01095984410494566, "duration": 9.768189430236816, "step": 1201}
+{"episode_reward": -105.28689316660166, "episode": 23.0, "duration": 1.3650147914886475, "step": 1210}
+{"episode_reward": -102.15298926830292, "episode": 24.0, "duration": 5.824762582778931, "step": 1246}
+{"episode_reward": -103.01394150406122, "episode": 25.0, "duration": 3.9220664501190186, "step": 1267}
+{"episode_reward": 99.82505854964256, "episode": 26.0, "batch_reward": 0.0278167724609375, "rec_loss": 0.009595692157745361, "duration": 8.908674716949463, "step": 1326}
+{"episode_reward": -106.74313844181597, "episode": 27.0, "duration": 7.913939476013184, "step": 1370}
+{"episode_reward": -101.44806611537933, "episode": 28.0, "batch_reward": -0.3466796875, "rec_loss": 0.009555930271744728, "duration": 5.981695652008057, "step": 1414}
+{"episode_reward": -111.34250700473785, "episode": 29.0, "duration": 4.2471935749053955, "step": 1445}
+{"episode_reward": -104.46282059326768, "episode": 30.0, "batch_reward": -0.12841796875, "rec_loss": 0.009929918684065342, "duration": 8.505333185195923, "step": 1508}
+{"episode_reward": -103.40809034369886, "episode": 31.0, "batch_reward": -0.0279998779296875, "rec_loss": 0.009591704234480858, "duration": 21.300943851470947, "step": 1630}
+{"episode_reward": -109.9959765356034, "episode": 32.0, "batch_reward": -0.2403564453125, "rec_loss": 0.009016656316816807, "duration": 14.001315355300903, "step": 1711}
+{"episode_reward": -104.14371640235186, "episode": 33.0, "duration": 8.544626712799072, "step": 1766}
+{"episode_reward": -101.48544604890049, "episode": 34.0, "batch_reward": -0.150146484375, "rec_loss": 0.009381674230098724, "duration": 19.601352214813232, "step": 1896}
+{"episode_reward": -112.20021797157824, "episode": 35.0, "batch_reward": -0.1798095703125, "rec_loss": 0.00884836446493864, "duration": 3.3813986778259277, "step": 1920}
+{"episode_reward": -100.77683010697365, "episode": 36.0, "duration": 2.893203020095825, "step": 1941}
+{"episode_reward": -102.59116438031197, "episode": 37.0, "batch_reward": -0.0679931640625, "rec_loss": 0.008307071402668953, "duration": 23.84562659263611, "step": 2095}
+{"episode_reward": -102.01233936287463, "episode": 38.0, "batch_reward": -0.2371826171875, "rec_loss": 0.007948118261992931, "duration": 2.7771995067596436, "step": 2115}
+{"episode_reward": -103.22124987095594, "episode": 39.0, "duration": 11.946175575256348, "step": 2196}
+{"episode_reward": -103.9327444806695, "episode": 40.0, "batch_reward": -0.14599609375, "rec_loss": 0.008209814317524433, "duration": 9.855432271957397, "step": 2262}
+{"episode_reward": -111.16678102687001, "episode": 41.0, "batch_reward": -0.198974609375, "rec_loss": 0.0076795099303126335, "duration": 6.44235634803772, "step": 2302}
+{"episode_reward": -102.47688120231032, "episode": 42.0, "duration": 2.634242534637451, "step": 2314}
+{"episode_reward": -102.60395345464349, "episode": 43.0, "batch_reward": 0.07781982421875, "rec_loss": 0.008100294508039951, "duration": 15.547335386276245, "step": 2429}
+{"episode_reward": -111.57916218042374, "episode": 44.0, "batch_reward": -0.0311279296875, "rec_loss": 0.007343287114053965, "duration": 14.992857694625854, "step": 2518}
+{"episode_reward": -117.56041081994772, "episode": 45.0, "duration": 6.745005369186401, "step": 2567}
+{"episode_reward": -102.56687082722783, "episode": 46.0, "batch_reward": -0.20849609375, "rec_loss": 0.006944543682038784, "duration": 11.57120418548584, "step": 2637}
+{"episode_reward": -104.30534387379885, "episode": 47.0, "duration": 4.7620766162872314, "step": 2664}
+{"episode_reward": -101.65146602317691, "episode": 48.0, "duration": 4.418588161468506, "step": 2696}
+{"episode_reward": -106.14131436496973, "episode": 49.0, "batch_reward": -0.0372314453125, "rec_loss": 0.007335744332522154, "duration": 6.836407899856567, "step": 2731}
+{"episode_reward": -101.70535980165005, "episode": 50.0, "duration": 3.473395824432373, "step": 2756}
+{"episode_reward": -102.9346763677895, "episode": 51.0, "batch_reward": -0.09716796875, "rec_loss": 0.006793968845158815, "duration": 13.119399547576904, "step": 2839}
+{"episode_reward": -106.37357420101762, "episode": 52.0, "duration": 6.04854941368103, "step": 2883}
+{"episode_reward": -106.63611699268222, "episode": 53.0, "batch_reward": 0.033599853515625, "rec_loss": 0.006737744435667992, "duration": 13.70616102218628, "step": 2970}
+{"episode_reward": -101.38155971094966, "episode": 54.0, "batch_reward": -0.12164306640625, "rec_loss": 0.0060590580105781555, "duration": 7.1609156131744385, "step": 3016}
+{"episode_reward": -106.36572383716702, "episode": 55.0, "duration": 2.0998237133026123, "step": 3031}
+{"episode_reward": -100.3480473048985, "episode": 56.0, "duration": 5.495102643966675, "step": 3064}
+{"episode_reward": -106.03662592731416, "episode": 57.0, "batch_reward": -0.0203399658203125, "rec_loss": 0.006929170340299606, "duration": 7.223886013031006, "step": 3117}
+{"episode_reward": -103.51968856714666, "episode": 58.0, "batch_reward": -0.204833984375, "rec_loss": 0.0056529780849814415, "duration": 19.740397691726685, "step": 3249}
+{"episode_reward": -102.45003944262862, "episode": 59.0, "duration": 4.161163330078125, "step": 3272}
+{"episode_reward": -104.5777318701148, "episode": 60.0, "duration": 3.747992753982544, "step": 3292}
+{"episode_reward": -102.1097942572087, "episode": 61.0, "batch_reward": -0.373779296875, "rec_loss": 0.006254008039832115, "duration": 8.77953290939331, "step": 3349}
+{"episode_reward": -105.83414854109287, "episode": 62.0, "duration": 4.420330047607422, "step": 3381}
+{"episode_reward": -103.96692110598087, "episode": 63.0, "batch_reward": -24.921875, "rec_loss": 0.005526652093976736, "duration": 6.945862770080566, "step": 3432}
+{"episode_reward": -104.3967648036778, "episode": 64.0, "duration": 7.32633900642395, "step": 3472}
+{"episode_reward": -102.12711049988866, "episode": 65.0, "batch_reward": -0.073974609375, "rec_loss": 0.006382314022630453, "duration": 12.810002565383911, "step": 3559}
+{"episode_reward": -101.84793776739389, "episode": 66.0, "batch_reward": -0.001983642578125, "rec_loss": 0.006213118555024266, "duration": 22.771003007888794, "step": 3713}
+{"episode_reward": -101.93054242990911, "episode": 67.0, "duration": 5.21118950843811, "step": 3751}
+{"episode_reward": -102.29862423799932, "episode": 68.0, "duration": 1.7044236660003662, "step": 3763}
+{"episode_reward": -101.97961771674454, "episode": 69.0, "batch_reward": -0.0933837890625, "rec_loss": 0.00564727489836514, "duration": 26.1651291847229, "step": 3935}
+{"episode_reward": -105.89978864789009, "episode": 70.0, "batch_reward": -0.1812744140625, "rec_loss": 0.005712244194000959, "duration": 12.640072584152222, "step": 4021}
+{"episode_reward": -108.57903004065156, "episode": 71.0, "duration": 3.203510046005249, "step": 4044}
+{"episode_reward": -103.3728164061904, "episode": 72.0, "duration": 4.459817171096802, "step": 4069}
+{"episode_reward": -103.37208936363459, "episode": 73.0, "batch_reward": -0.1402587890625, "rec_loss": 0.005702950991690159, "duration": 21.89356231689453, "step": 4200}
+{"episode_reward": -103.3503129016608, "episode": 74.0, "batch_reward": 0.0960693359375, "rec_loss": 0.005737144034355879, "duration": 14.127204895019531, "step": 4297}
+{"episode_reward": -105.9454226270318, "episode": 75.0, "batch_reward": -0.023895263671875, "rec_loss": 0.005305070895701647, "duration": 6.039295673370361, "step": 4341}
+{"episode_reward": -101.77719654887915, "episode": 76.0, "duration": 3.348325252532959, "step": 4365}
+{"episode_reward": -104.32221318036318, "episode": 77.0, "batch_reward": -0.06011962890625, "rec_loss": 0.005684809293597937, "duration": 9.641544342041016, "step": 4436}
+{"episode_reward": -109.47993665933609, "episode": 78.0, "batch_reward": -0.045867919921875, "rec_loss": 0.005340341478586197, "duration": 17.81695294380188, "step": 4561}
+{"episode_reward": -100.8380121793598, "episode": 79.0, "duration": 2.2398056983947754, "step": 4569}
+{"episode_reward": -101.4612240716815, "episode": 80.0, "batch_reward": -0.11376953125, "rec_loss": 0.005874487105756998, "duration": 11.540825128555298, "step": 4647}
+{"episode_reward": -106.53950841724873, "episode": 81.0, "batch_reward": 0.0050506591796875, "rec_loss": 0.005683255381882191, "duration": 28.673340320587158, "step": 4836}
+{"episode_reward": -103.02641252800822, "episode": 82.0, "duration": 4.315894603729248, "step": 4860}
+{"episode_reward": -103.61686576902866, "episode": 83.0, "batch_reward": -0.1246337890625, "rec_loss": 0.005108001176267862, "duration": 6.308612108230591, "step": 4906}
+{"episode_reward": -102.13785215839744, "episode": 84.0, "duration": 6.998328447341919, "step": 4957}
+{"episode_reward": -106.12148462608457, "episode": 85.0, "batch_reward": -0.0936279296875, "rec_loss": 0.005588440224528313, "duration": 14.345240354537964, "step": 5048}
+{"episode_reward": -104.81438386812806, "episode": 86.0, "duration": 6.848230838775635, "step": 5090}
+{"episode_reward": -106.91897813230753, "episode": 87.0, "batch_reward": 0.0269317626953125, "rec_loss": 0.005640729796141386, "duration": 14.82587218284607, "step": 5176}
+{"episode_reward": -105.09278178215027, "episode": 88.0, "batch_reward": -0.11309814453125, "rec_loss": 0.0056429412215948105, "duration": 7.427743434906006, "step": 5230}
+{"episode_reward": -110.46355095878243, "episode": 89.0, "batch_reward": 0.03631591796875, "rec_loss": 0.00549011817201972, "duration": 21.33530020713806, "step": 5373}
+{"episode_reward": -107.14041056064889, "episode": 90.0, "duration": 2.6661036014556885, "step": 5392}
+{"episode_reward": -103.96436561644077, "episode": 91.0, "batch_reward": 0.1348876953125, "rec_loss": 0.005236943252384663, "duration": 15.649298429489136, "step": 5493}
+{"episode_reward": -108.54663051851094, "episode": 92.0, "batch_reward": -0.083953857421875, "rec_loss": 0.005359068512916565, "duration": 26.448956966400146, "step": 5669}
+{"episode_reward": -114.96198188140988, "episode": 93.0, "batch_reward": 0.010772705078125, "rec_loss": 0.0047955745831131935, "duration": 10.901517391204834, "step": 5741}
+{"episode_reward": -106.2743128836155, "episode": 94.0, "duration": 9.058929204940796, "step": 5793}
+{"episode_reward": -103.40686383470893, "episode": 95.0, "batch_reward": -0.109344482421875, "rec_loss": 0.005366884171962738, "duration": 28.38317608833313, "step": 5974}
+{"episode_reward": -106.9516382906586, "episode": 96.0, "batch_reward": -0.1239013671875, "rec_loss": 0.004988113418221474, "duration": 17.67403769493103, "step": 6082}
+{"episode_reward": -102.24467533268034, "episode": 97.0, "batch_reward": -0.09552001953125, "rec_loss": 0.005234528798609972, "duration": 14.055324077606201, "step": 6171}
+{"episode_reward": -102.70974521152675, "episode": 98.0, "batch_reward": -0.2415771484375, "rec_loss": 0.005161937791854143, "duration": 7.292094945907593, "step": 6224}
+{"episode_reward": -101.2491346001625, "episode": 99.0, "duration": 9.057826280593872, "step": 6291}
+{"episode_reward": -105.97565343976021, "episode": 100.0, "batch_reward": 0.07904052734375, "rec_loss": 0.004696572199463844, "duration": 11.534189224243164, "step": 6361}
+{"episode_reward": -106.37824401259422, "episode": 101.0, "duration": 3.2955715656280518, "step": 6385}
+{"episode_reward": -103.79686996340752, "episode": 102.0, "duration": 2.9321703910827637, "step": 6398}
+{"episode_reward": -101.65570017695427, "episode": 103.0, "batch_reward": -0.153564453125, "rec_loss": 0.005738257430493832, "duration": 12.895535230636597, "step": 6473}
+{"episode_reward": -111.06548128882423, "episode": 104.0, "batch_reward": -0.1331787109375, "rec_loss": 0.005021732300519943, "duration": 7.355005264282227, "step": 6518}
+{"episode_reward": -103.5380754545331, "episode": 105.0, "duration": 4.799538850784302, "step": 6553}
+{"episode_reward": -103.76766074076295, "episode": 106.0, "duration": 2.4246230125427246, "step": 6570}
+{"episode_reward": -101.05895702540874, "episode": 107.0, "batch_reward": 0.07470703125, "rec_loss": 0.0049136546440422535, "duration": 9.748076438903809, "step": 6628}
+{"episode_reward": -107.90522755682468, "episode": 108.0, "batch_reward": 0.011199951171875, "rec_loss": 0.0049759685061872005, "duration": 11.584300994873047, "step": 6706}
+{"episode_reward": -100.76659275591373, "episode": 109.0, "batch_reward": 0.2744140625, "rec_loss": 0.0051292069256305695, "duration": 16.436098337173462, "step": 6806}
+{"episode_reward": -106.28654327616096, "episode": 110.0, "duration": 3.237955331802368, "step": 6829}
+{"episode_reward": -101.82702007889748, "episode": 111.0, "duration": 1.838890552520752, "step": 6842}
+{"episode_reward": -102.80226316303015, "episode": 112.0, "duration": 7.8529815673828125, "step": 6892}
+{"episode_reward": -102.72859484516084, "episode": 113.0, "batch_reward": -0.14208984375, "rec_loss": 0.005133087746798992, "duration": 10.717375040054321, "step": 6956}
+{"episode_reward": -104.19805347546935, "episode": 114.0, "batch_reward": 0.088134765625, "rec_loss": 0.005082095041871071, "duration": 11.389477968215942, "step": 7040}
+{"episode_reward": -102.37430253624916, "episode": 115.0, "duration": 9.362839221954346, "step": 7094}
+{"episode_reward": -104.56428179796785, "episode": 116.0, "batch_reward": -0.0914306640625, "rec_loss": 0.004620167892426252, "duration": 13.353164196014404, "step": 7177}
+{"episode_reward": -109.45560597255826, "episode": 117.0, "batch_reward": -0.1119384765625, "rec_loss": 0.004822667222470045, "duration": 6.6361823081970215, "step": 7218}
+{"episode_reward": -103.47278369963169, "episode": 118.0, "duration": 2.9137678146362305, "step": 7232}
+{"episode_reward": -103.10645571351051, "episode": 119.0, "duration": 3.661316156387329, "step": 7252}
+{"episode_reward": -100.69757993519306, "episode": 120.0, "duration": 2.9203524589538574, "step": 7273}
+{"episode_reward": -104.3208942040801, "episode": 121.0, "batch_reward": -0.259033203125, "rec_loss": 0.005196103360503912, "duration": 7.806426048278809, "step": 7330}
+{"episode_reward": -111.17096618190408, "episode": 122.0, "duration": 4.6828367710113525, "step": 7364}
+{"episode_reward": -102.78936982527375, "episode": 123.0, "batch_reward": -0.0628662109375, "rec_loss": 0.0049090008251369, "duration": 9.4607093334198, "step": 7426}
+{"episode_reward": -101.48143611848354, "episode": 124.0, "duration": 3.4366250038146973, "step": 7451}
+{"episode_reward": -102.4418338984251, "episode": 125.0, "duration": 2.5426273345947266, "step": 7469}
+{"episode_reward": -103.14933871477842, "episode": 126.0, "duration": 2.6349117755889893, "step": 7488}
+{"episode_reward": -104.85819531977177, "episode": 127.0, "batch_reward": -0.10748291015625, "rec_loss": 0.0048420624807477, "duration": 6.672167778015137, "step": 7529}
+{"episode_reward": -103.69242167845368, "episode": 128.0, "duration": 8.739250659942627, "step": 7579}
+{"episode_reward": -103.52152376621962, "episode": 129.0, "duration": 2.234421730041504, "step": 7595}
+{"episode_reward": -102.6485003978014, "episode": 130.0, "batch_reward": -0.14013671875, "rec_loss": 0.004280418623238802, "duration": 13.71298098564148, "step": 7696}
+{"episode_reward": -102.39154803752899, "episode": 131.0, "batch_reward": 0.1380615234375, "rec_loss": 0.005145752802491188, "duration": 5.512272834777832, "step": 7736}
+{"episode_reward": -101.01226348429918, "episode": 132.0, "batch_reward": -24.890625, "rec_loss": 0.005180936306715012, "duration": 19.283292770385742, "step": 7864}
+{"episode_reward": -121.4910961650312, "episode": 133.0, "batch_reward": -0.144775390625, "rec_loss": 0.004910069517791271, "duration": 17.166869401931763, "step": 7976}
+{"episode_reward": -107.0832036063075, "episode": 134.0, "batch_reward": -24.90625, "rec_loss": 0.0047898744232952595, "duration": 11.438396692276001, "step": 8053}
+{"episode_reward": -103.63121446873993, "episode": 135.0, "duration": 2.8213250637054443, "step": 8073}
+{"episode_reward": -103.56070578843355, "episode": 136.0, "duration": 1.1745045185089111, "step": 8081}
+{"episode_reward": -101.41193895787, "episode": 137.0, "batch_reward": -0.241455078125, "rec_loss": 0.004649752750992775, "duration": 5.893139123916626, "step": 8124}
+{"episode_reward": -100.91525920666754, "episode": 138.0, "duration": 5.00985860824585, "step": 8153}
+{"episode_reward": -104.91720207035542, "episode": 139.0, "batch_reward": -0.10455322265625, "rec_loss": 0.004555509891360998, "duration": 7.8181798458099365, "step": 8203}
+{"episode_reward": -103.18237843178213, "episode": 140.0, "duration": 9.86346697807312, "step": 8261}
+{"episode_reward": -102.29876321181655, "episode": 141.0, "duration": 2.6439096927642822, "step": 8280}
+{"episode_reward": -104.02460403740406, "episode": 142.0, "batch_reward": -0.163818359375, "rec_loss": 0.00521618640050292, "duration": 10.527873754501343, "step": 8342}
+{"episode_reward": -102.56554818153381, "episode": 143.0, "batch_reward": -0.105224609375, "rec_loss": 0.004817752167582512, "duration": 9.941501379013062, "step": 8415}
+{"episode_reward": -100.92013903707266, "episode": 144.0, "duration": 11.455254316329956, "step": 8486}
+{"episode_reward": -105.84290835820138, "episode": 145.0, "batch_reward": -0.07733154296875, "rec_loss": 0.0045627872459590435, "duration": 4.4258787631988525, "step": 8518}
+{"episode_reward": -108.12163133919239, "episode": 146.0, "duration": 1.606492519378662, "step": 8529}
+{"episode_reward": -102.72520570456982, "episode": 147.0, "duration": 4.744003057479858, "step": 8556}
+{"episode_reward": -103.14881099760532, "episode": 148.0, "batch_reward": -0.07470703125, "rec_loss": 0.005208498798310757, "duration": 7.254186630249023, "step": 8602}
+{"episode_reward": -105.78691183403134, "episode": 149.0, "batch_reward": 0.0050048828125, "rec_loss": 0.004926374647766352, "duration": 22.638603448867798, "step": 8746}
+{"episode_reward": -103.62041157484055, "episode": 150.0, "duration": 6.282523155212402, "step": 8792}
+{"episode_reward": -107.02843394875526, "episode": 151.0, "batch_reward": -0.06707763671875, "rec_loss": 0.005210469011217356, "duration": 4.249006509780884, "step": 8815}
+{"episode_reward": -101.77250929921865, "episode": 152.0, "duration": 11.331554651260376, "step": 8891}
+{"episode_reward": 97.46234903112054, "episode": 153.0, "batch_reward": -0.1824951171875, "rec_loss": 0.004938218742609024, "duration": 3.612722873687744, "step": 8910}
+{"episode_reward": -102.33122541755438, "episode": 154.0, "batch_reward": -0.1273193359375, "rec_loss": 0.004411172121763229, "duration": 15.103446245193481, "step": 9006}
+{"episode_reward": -105.12498713843524, "episode": 155.0, "duration": 9.717999935150146, "step": 9061}
+{"episode_reward": -100.85417571291327, "episode": 156.0, "batch_reward": -0.07196044921875, "rec_loss": 0.004360930062830448, "duration": 14.710700035095215, "step": 9162}
+{"episode_reward": -104.94493648782372, "episode": 157.0, "duration": 1.1778669357299805, "step": 9170}
+{"episode_reward": -102.33904407918453, "episode": 158.0, "batch_reward": -0.08929443359375, "rec_loss": 0.0043935589492321014, "duration": 13.392011642456055, "step": 9268}
+{"episode_reward": -107.7530777528882, "episode": 159.0, "batch_reward": 0.037353515625, "rec_loss": 0.004895847290754318, "duration": 16.772704124450684, "step": 9385}
+{"episode_reward": -116.46408245712519, "episode": 160.0, "batch_reward": -0.03875732421875, "rec_loss": 0.004841886460781097, "duration": 13.949305057525635, "step": 9481}
+{"episode_reward": -102.4792624078691, "episode": 161.0, "batch_reward": 0.0310821533203125, "rec_loss": 0.004532121121883392, "duration": 7.2433693408966064, "step": 9527}
+{"episode_reward": -103.21971453726292, "episode": 162.0, "duration": 9.39866852760315, "step": 9589}
+{"episode_reward": -102.12488190131262, "episode": 163.0, "batch_reward": -0.06005859375, "rec_loss": 0.004473199136555195, "duration": 10.02030611038208, "step": 9655}
+{"episode_reward": -100.351069226861, "episode": 164.0, "duration": 2.171701192855835, "step": 9670}
+{"episode_reward": -99.70098893344402, "episode": 165.0, "batch_reward": 0.001953125, "rec_loss": 0.004767997656017542, "duration": 6.639339923858643, "step": 9711}
+{"episode_reward": -100.34541899710894, "episode": 166.0, "duration": 1.4447829723358154, "step": 9721}
+{"episode_reward": -102.37477107346058, "episode": 167.0, "duration": 9.687657356262207, "step": 9792}
+{"episode_reward": -105.94702855776995, "episode": 168.0, "batch_reward": -0.058990478515625, "rec_loss": 0.00429085036739707, "duration": 12.862427949905396, "step": 9879}
+{"episode_reward": -104.02343047689646, "episode": 169.0, "batch_reward": -0.0650787353515625, "rec_loss": 0.004823828814551234, "duration": 24.024016618728638, "step": 10034}
+{"episode_reward": -100.79531653225422, "episode": 170.0, "duration": 4.5197670459747314, "step": 10059}
+{"episode_reward": -104.74315468966961, "episode": 171.0, "duration": 3.2301201820373535, "step": 10082}
+{"episode_reward": -101.20725155994296, "episode": 172.0, "batch_reward": -0.04559326171875, "rec_loss": 0.004494972061365843, "duration": 5.3746984004974365, "step": 10121}
+{"episode_reward": -101.32625062856823, "episode": 173.0, "duration": 1.975905418395996, "step": 10135}
+{"episode_reward": -102.0301146954298, "episode": 174.0, "batch_reward": -0.10076904296875, "rec_loss": 0.004628914874047041, "duration": 19.34968876838684, "step": 10262}
+{"episode_reward": -111.11301616951823, "episode": 175.0, "batch_reward": -0.10137939453125, "rec_loss": 0.004404138308018446, "duration": 16.75452494621277, "step": 10370}
+{"episode_reward": -110.52763924188912, "episode": 176.0, "duration": 1.7139134407043457, "step": 10382}
+{"episode_reward": -102.17490412294865, "episode": 177.0, "batch_reward": -0.32861328125, "rec_loss": 0.004572870209813118, "duration": 4.583238363265991, "step": 10407}
+{"episode_reward": -104.74407706409693, "episode": 178.0, "batch_reward": 0.048095703125, "rec_loss": 0.00456272205337882, "duration": 19.846006870269775, "step": 10524}
+{"episode_reward": -114.58277330291457, "episode": 179.0, "duration": 2.5666580200195312, "step": 10542}
+{"episode_reward": -102.447351064533, "episode": 180.0, "duration": 4.974146127700806, "step": 10578}
+{"episode_reward": -104.41868707537651, "episode": 181.0, "batch_reward": -0.26611328125, "rec_loss": 0.004572401754558086, "duration": 6.037951469421387, "step": 10615}
+{"episode_reward": -104.25788578391075, "episode": 182.0, "duration": 7.4061973094940186, "step": 10655}
+{"episode_reward": -102.96944158896804, "episode": 183.0, "batch_reward": -0.2381591796875, "rec_loss": 0.004432710353285074, "duration": 14.187489748001099, "step": 10752}
+{"episode_reward": -104.5913664912805, "episode": 184.0, "batch_reward": -0.059722900390625, "rec_loss": 0.004646518267691135, "duration": 8.898100852966309, "step": 10817}
+{"episode_reward": -103.59865652397275, "episode": 185.0, "duration": 2.511376142501831, "step": 10835}
+{"episode_reward": -102.6549870222807, "episode": 186.0, "duration": 3.236233711242676, "step": 10858}
+{"episode_reward": -100.70613896846771, "episode": 187.0, "batch_reward": -0.2352294921875, "rec_loss": 0.004623415879905224, "duration": 6.313052177429199, "step": 10904}
+{"episode_reward": -105.34602208435535, "episode": 188.0, "duration": 11.906804323196411, "step": 10976}
+{"episode_reward": -102.98161435499787, "episode": 189.0, "batch_reward": -0.021209716796875, "rec_loss": 0.004497497342526913, "duration": 4.126718521118164, "step": 11006}
+{"episode_reward": -104.56106096506119, "episode": 190.0, "duration": 2.5404999256134033, "step": 11017}
+{"episode_reward": -102.14843541383743, "episode": 191.0, "duration": 2.292181968688965, "step": 11033}
+{"episode_reward": -100.92098101973534, "episode": 192.0, "duration": 8.238357543945312, "step": 11086}
+{"episode_reward": -102.1812935359776, "episode": 193.0, "batch_reward": -0.1661376953125, "rec_loss": 0.004532084334641695, "duration": 9.76732611656189, "step": 11144}
+{"episode_reward": -106.25865129940212, "episode": 194.0, "duration": 4.2497429847717285, "step": 11168}
+{"episode_reward": -101.58817905187607, "episode": 195.0, "duration": 4.141401052474976, "step": 11190}
+{"episode_reward": -101.25842366367579, "episode": 196.0, "batch_reward": -0.0704345703125, "rec_loss": 0.004279947839677334, "duration": 2.6007227897644043, "step": 11201}
+{"episode_reward": -102.6877882629633, "episode": 197.0, "duration": 2.6464781761169434, "step": 11220}
+{"episode_reward": -102.60185461491346, "episode": 198.0, "batch_reward": -0.24072265625, "rec_loss": 0.0038310475647449493, "duration": 18.50953984260559, "step": 11326}
+{"episode_reward": -116.71546302735806, "episode": 199.0, "duration": 5.072298049926758, "step": 11363}
+{"episode_reward": -101.52871320210397, "episode": 200.0, "duration": 5.714669704437256, "step": 11396}
+{"episode_reward": -107.9768526814878, "episode": 201.0, "batch_reward": 0.01325225830078125, "rec_loss": 0.004563585389405489, "duration": 9.772788763046265, "step": 11452}
+{"episode_reward": -104.2745193913579, "episode": 202.0, "duration": 2.5650482177734375, "step": 11470}
+{"episode_reward": -103.76352957636118, "episode": 203.0, "duration": 2.3686578273773193, "step": 11487}
+{"episode_reward": -103.28345577046275, "episode": 204.0, "batch_reward": -0.07427978515625, "rec_loss": 0.004611344542354345, "duration": 9.907162189483643, "step": 11552}
+{"episode_reward": -101.55363631248474, "episode": 205.0, "duration": 5.808696985244751, "step": 11594}
+{"episode_reward": -103.76680944487453, "episode": 206.0, "batch_reward": 0.0233612060546875, "rec_loss": 0.003888779552653432, "duration": 4.525698661804199, "step": 11627}
+{"episode_reward": -104.11709756031632, "episode": 207.0, "duration": 4.161970138549805, "step": 11657}
+{"episode_reward": -102.34521196037531, "episode": 208.0, "batch_reward": -0.1129150390625, "rec_loss": 0.004962370730936527, "duration": 10.172774314880371, "step": 11724}
+{"episode_reward": -100.37110560771544, "episode": 209.0, "duration": 4.7076756954193115, "step": 11758}
+{"episode_reward": -107.67366886883974, "episode": 210.0, "duration": 2.8620638847351074, "step": 11771}
+{"episode_reward": -100.83505857735872, "episode": 211.0, "batch_reward": -0.06243896484375, "rec_loss": 0.004373268689960241, "duration": 9.54841661453247, "step": 11833}
+{"episode_reward": -101.64144882932305, "episode": 212.0, "duration": 8.323423147201538, "step": 11879}
+{"episode_reward": -103.20463929325342, "episode": 213.0, "duration": 1.715313196182251, "step": 11891}
+{"episode_reward": -101.78162332996726, "episode": 214.0, "batch_reward": 0.0250091552734375, "rec_loss": 0.004206630401313305, "duration": 16.32433533668518, "step": 11980}
+{"episode_reward": 91.13607983291149, "episode": 215.0, "batch_reward": -0.099365234375, "rec_loss": 0.004097878001630306, "duration": 25.053757429122925, "step": 12143}
+{"episode_reward": -106.99837167188525, "episode": 216.0, "duration": 3.842623710632324, "step": 12171}
+{"episode_reward": -105.19015153497458, "episode": 217.0, "duration": 3.763852596282959, "step": 12198}
+{"episode_reward": -106.79198690503836, "episode": 218.0, "batch_reward": -0.168701171875, "rec_loss": 0.00463763577863574, "duration": 9.033505916595459, "step": 12256}
+{"episode_reward": -106.84953332133591, "episode": 219.0, "duration": 5.727548122406006, "step": 12291}
+{"episode_reward": -103.67542004585266, "episode": 220.0, "batch_reward": -0.057891845703125, "rec_loss": 0.00452456995844841, "duration": 15.634755373001099, "step": 12377}
+{"episode_reward": -103.25264168903232, "episode": 221.0, "batch_reward": 0.030975341796875, "rec_loss": 0.004766654223203659, "duration": 14.976293802261353, "step": 12472}
+{"episode_reward": -101.88086957857013, "episode": 222.0, "batch_reward": -0.0496826171875, "rec_loss": 0.0040641967207193375, "duration": 8.448782920837402, "step": 12519}
+{"episode_reward": -103.43779708631337, "episode": 223.0, "batch_reward": -0.0216064453125, "rec_loss": 0.004870314616709948, "duration": 22.270859241485596, "step": 12660}
+{"episode_reward": -116.86106126382947, "episode": 224.0, "batch_reward": -0.0018463134765625, "rec_loss": 0.004457033704966307, "duration": 11.185555219650269, "step": 12735}
+{"episode_reward": -102.71710983477533, "episode": 225.0, "batch_reward": -0.037994384765625, "rec_loss": 0.004577690735459328, "duration": 11.56204104423523, "step": 12812}
+{"episode_reward": -105.31355204805732, "episode": 226.0, "duration": 9.323628902435303, "step": 12874}
+{"episode_reward": -100.837342845276, "episode": 227.0, "batch_reward": 0.0195159912109375, "rec_loss": 0.004348406568169594, "duration": 8.005111694335938, "step": 12925}
+{"episode_reward": -102.52675008773804, "episode": 228.0, "batch_reward": -0.183837890625, "rec_loss": 0.004391703754663467, "duration": 17.714670419692993, "step": 13049}
+{"episode_reward": -110.3608352765441, "episode": 229.0, "duration": 1.8396625518798828, "step": 13062}
+{"episode_reward": -102.36958586797118, "episode": 230.0, "batch_reward": -0.059722900390625, "rec_loss": 0.00430366862565279, "duration": 5.367423057556152, "step": 13101}
+{"episode_reward": -103.19063709676266, "episode": 231.0, "duration": 6.632294416427612, "step": 13143}
+{"episode_reward": -103.32720439136028, "episode": 232.0, "duration": 3.2919418811798096, "step": 13159}
+{"episode_reward": -103.23379852622747, "episode": 233.0, "batch_reward": -0.11749267578125, "rec_loss": 0.004799886606633663, "duration": 10.74612832069397, "step": 13238}
+{"episode_reward": -106.35065424349159, "episode": 234.0, "duration": 5.360795497894287, "step": 13277}
+{"episode_reward": -105.37694578617811, "episode": 235.0, "batch_reward": -0.143798828125, "rec_loss": 0.004762183874845505, "duration": 10.433456420898438, "step": 13331}
+{"episode_reward": -104.52042300999165, "episode": 236.0, "batch_reward": -0.04998779296875, "rec_loss": 0.004586184863001108, "duration": 15.766274452209473, "step": 13440}
+{"episode_reward": -102.44134769402444, "episode": 237.0, "duration": 2.0425071716308594, "step": 13454}
+{"episode_reward": -102.48612567037344, "episode": 238.0, "duration": 4.45307731628418, "step": 13486}
+{"episode_reward": -101.66507218778133, "episode": 239.0, "batch_reward": -0.1158447265625, "rec_loss": 0.004592341370880604, "duration": 13.59015440940857, "step": 13571}
+{"episode_reward": -102.7752122040838, "episode": 240.0, "batch_reward": -0.104248046875, "rec_loss": 0.004049304407089949, "duration": 15.351987361907959, "step": 13663}
+{"episode_reward": -104.9136475417763, "episode": 241.0, "batch_reward": 0.053558349609375, "rec_loss": 0.003907929174602032, "duration": 12.506872415542603, "step": 13748}
+{"episode_reward": -100.94976074434817, "episode": 242.0, "duration": 3.619495153427124, "step": 13774}
+{"episode_reward": -102.01731584593654, "episode": 243.0, "batch_reward": -0.11395263671875, "rec_loss": 0.004368380177766085, "duration": 6.30804443359375, "step": 13820}
+{"episode_reward": -105.60885491967201, "episode": 244.0, "duration": 11.114463806152344, "step": 13888}
+{"episode_reward": -104.18027121201158, "episode": 245.0, "batch_reward": -0.03631591796875, "rec_loss": 0.004410650813952088, "duration": 20.765838146209717, "step": 14020}
