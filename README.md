@@ -26,6 +26,8 @@ pip install tensorboard
 # CUDA 11.3
 pip install torch==1.11.0+cu113 torchvision==0.12.0+cu113 torchaudio==0.11.0 --extra-index-url https://download.pytorch.org/whl/cu113
 ```
+- Build sfm library.
+[sfm_link](https://github.com/robotics-upo/lightsfm)
 - Install spconv which fits with your CUDA.
 [spconv_link](https://github.com/traveller59/spconv.git)
 - Copy the given `/small_house` directory to `/home/$username$/.gazebo/models`
