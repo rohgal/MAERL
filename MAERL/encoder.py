@@ -48,46 +48,46 @@ class LidarEncoder(nn.Module):
         super().__init__()
         self.sparse_shape = grid_size[::-1] + [1, 0, 0]
         self.batch_size = batch_size
-        self.feature_dim = 73728
+        self.feature_dim = 98304
 
         norm_fn = partial(nn.BatchNorm1d, eps=1e-3, momentum=0.01)
 
         self.last_pad = 0
 
         self.conv_input = spconv.SparseSequential(
-            spconv.SubMConv3d(num_point_features, 9, 3, padding=1, bias=False, indice_key='subm1'),
-            norm_fn(9),
+            spconv.SubMConv3d(num_point_features, 12, 3, padding=1, bias=False, indice_key='subm1'),
+            norm_fn(12),
             nn.ReLU(),
         )
 
         block = post_act_block
 
         self.conv1 = spconv.SparseSequential(
-            block(9, 9, 3, norm_fn=norm_fn, padding=1, indice_key='subm1'),
+            block(12, 12, 3, norm_fn=norm_fn, padding=1, indice_key='subm1'),
         )
 
         self.conv2 = spconv.SparseSequential(
-            block(9, 18, 3, norm_fn=norm_fn, stride=2, padding=1, indice_key='spconv2', conv_type='spconv'),
-            block(18, 18, 3, norm_fn=norm_fn, padding=1, indice_key='subm2'),
-            block(18, 18, 3, norm_fn=norm_fn, padding=1, indice_key='subm2'),
+            block(12, 24, 3, norm_fn=norm_fn, stride=2, padding=1, indice_key='spconv2', conv_type='spconv'),
+            block(24, 24, 3, norm_fn=norm_fn, padding=1, indice_key='subm2'),
+            block(24, 24, 3, norm_fn=norm_fn, padding=1, indice_key='subm2'),
         )
 
         self.conv3 = spconv.SparseSequential(
-            block(18, 36, 3, norm_fn=norm_fn, stride=2, padding=1, indice_key='spconv3', conv_type='spconv'),
-            block(36, 36, 3, norm_fn=norm_fn, padding=1, indice_key='subm3'),
-            block(36, 36, 3, norm_fn=norm_fn, padding=1, indice_key='subm3'),
+            block(24, 48, 3, norm_fn=norm_fn, stride=2, padding=1, indice_key='spconv3', conv_type='spconv'),
+            block(48, 48, 3, norm_fn=norm_fn, padding=1, indice_key='subm3'),
+            block(48, 48, 3, norm_fn=norm_fn, padding=1, indice_key='subm3'),
         )
 
         self.conv4 = spconv.SparseSequential(
-            block(36, 36, 3, norm_fn=norm_fn, stride=2, padding=(0, 1, 1), indice_key='spconv4', conv_type='spconv'),
-            block(36, 36, 3, norm_fn=norm_fn, padding=1, indice_key='subm4'),
-            block(36, 36, 3, norm_fn=norm_fn, padding=1, indice_key='subm4'),
+            block(48, 48, 3, norm_fn=norm_fn, stride=2, padding=(0, 1, 1), indice_key='spconv4', conv_type='spconv'),
+            block(48, 48, 3, norm_fn=norm_fn, padding=1, indice_key='subm4'),
+            block(48, 48, 3, norm_fn=norm_fn, padding=1, indice_key='subm4'),
         )
 
         self.conv_out = spconv.SparseSequential(
-            spconv.SparseConv3d(36, 72, (3, 1, 1), stride=(2, 1, 1), padding=self.last_pad,
+            spconv.SparseConv3d(48, 96, (3, 1, 1), stride=(2, 1, 1), padding=self.last_pad,
                                 bias=False, indice_key='spconv_down2'),
-            norm_fn(72),
+            norm_fn(96),
             nn.ReLU(),
         )
 
@@ -136,17 +136,17 @@ class LidarDecoder(nn.Module):
     def __init__(self):
         super().__init__()
         self.deconv1 = nn.Sequential(
-            nn.ConvTranspose3d(72, 36, 3, padding=(0,1,1), stride=2, bias=False),
-            nn.BatchNorm3d(36),
+            nn.ConvTranspose3d(96, 48, 3, padding=(0,1,1), stride=2, bias=False),
+            nn.BatchNorm3d(48),
             nn.ReLU()
         )
         self.deconv2 = nn.Sequential(
-            nn.ConvTranspose3d(36, 12, 3, padding=(0,1,1), stride=(3,2,2), bias=False),
-            nn.BatchNorm3d(12),
+            nn.ConvTranspose3d(48, 16, 3, padding=(0,1,1), stride=(3,2,2), bias=False),
+            nn.BatchNorm3d(16),
             nn.ReLU()
         )
         self.deconv3 = nn.Sequential(
-            nn.ConvTranspose3d(12, 1, 3, padding=1, output_padding=1, stride=(3,2,2), bias=False),
+            nn.ConvTranspose3d(16, 1, 3, padding=1, output_padding=1, stride=(3,2,2), bias=False),
         )
 
     def forward(self, encoder_out):
