@@ -427,10 +427,10 @@ class MAESacAgent(object):
         if step % self.log_interval == 0:
             L.log('train/batch_reward', rewards.mean(), step)
 
-        # self.update_critic(voxels, coordinates, numpoints, robots, actions, rewards, next_voxels, next_coordinates, next_numpoints, next_robots, not_done, L, step)
+        self.update_critic(voxels, coordinates, numpoints, robots, actions, rewards, next_voxels, next_coordinates, next_numpoints, next_robots, not_done, L, step)
 
-        # if step % self.actor_update_freq == 0:
-        #     self.update_actor_and_alpha(voxels, coordinates, numpoints, robots, L, step)
+        if step % self.actor_update_freq == 0:
+            self.update_actor_and_alpha(voxels, coordinates, numpoints, robots, L, step)
 
         # if step % self.critic_target_update_freq == 0:
         #     soft_update_params(
