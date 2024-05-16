@@ -131,16 +131,14 @@ def main():
 
     grid_size = np.round((np.array(args.point_cloud_range)[3:6] - np.array(args.point_cloud_range)[0:3]) / np.array(args.voxel_size)).astype(np.int64)
 
+    data_processor = utils.DataProcessor(args.point_cloud_range, args.num_point_features, args.voxel_size, args.max_num_points_per_voxel, args.max_num_voxels)
+
     replay_buffer = utils.ReplayBuffer(
         action_shape=action_shape,
         capacity=args.replay_buffer_capacity,
         batch_size=args.batch_size,
         device=device,
-        point_cloud_range=args.point_cloud_range,
-        num_point_features=args.num_point_features,
-        voxel_size=args.voxel_size,
-        max_num_points_per_voxel=args.max_num_points_per_voxel,
-        max_num_voxels=args.max_num_voxels,
+        data_processor = data_processor,
     )
 
     agent = MAESacAgent(
@@ -205,7 +203,8 @@ def main():
             action = env.action_space.sample()
         else:
             with utils.eval_mode(agent):
-                action = agent.sample_action(obs)
+                voxels, coordinates, numpoints = data_processor.forward(obs_sensor)
+                action = agent.sample_action(voxels, numpoints, coordinates, obs_robot)
 
         # run training update
         if step >= args.init_steps:

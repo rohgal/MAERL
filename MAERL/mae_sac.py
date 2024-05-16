@@ -56,15 +56,19 @@ class Actor(nn.Module):
         self.apply(weight_init)
 
     def forward(
-        self, voxels, voxel_numpoints, voxel_coordinates, robot_states, compute_pi=True, compute_log_pi=True, detach_encoder=False
-    ):  
-        if detach_encoder:
-            with torch.no_grad():
+        self, voxels, voxel_numpoints, voxel_coordinates, robot_states, compute_pi=True, compute_log_pi=True, detach_encoder=False, downstream=False
+    ):
+        if downstream:
+            voxel_features = self.vfe(voxels, voxel_numpoints)
+            encoder_out = self.encoder(voxel_features, voxel_coordinates, downstream=True)
+        else:
+            if detach_encoder:
+                with torch.no_grad():
+                    voxel_features = self.vfe(voxels, voxel_numpoints)
+                    encoder_out = self.encoder(voxel_features, voxel_coordinates)
+            else:
                 voxel_features = self.vfe(voxels, voxel_numpoints)
                 encoder_out = self.encoder(voxel_features, voxel_coordinates)
-        else:
-            voxel_features = self.vfe(voxels, voxel_numpoints)
-            encoder_out = self.encoder(voxel_features, voxel_coordinates)
 
         h = encoder_out.view(encoder_out.size(0), -1)
 
@@ -345,11 +349,18 @@ class MAESacAgent(object):
             )
             return mu.cpu().data.numpy().flatten()
 
-    def sample_action(self, obs):
+    def sample_action(self, voxels, numpoints, coordinates, obs_robot):
         with torch.no_grad():
-            obs = torch.FloatTensor(obs).to(self.device)
-            obs = obs.unsqueeze(0)
-            mu, pi, _, _ = self.actor(obs, compute_log_pi=False)
+            batch_index = np.full((coordinates.shape[0], 1), 0, dtype=np.int32)
+            batched_coordinates = np.concatenate((batch_index, coordinates), axis=1)
+
+            voxels_tsr = torch.as_tensor(voxels, device=self.device)
+            coordinates_tsr = torch.as_tensor(batched_coordinates, device=self.device)
+            numpoints_tsr = torch.as_tensor(numpoints, device=self.device)
+            obs_robot_tsr = torch.as_tensor(obs_robot, device=self.device)
+            obs_robot_tsr = obs_robot_tsr.unsqueeze(0)
+
+            mu, pi, _, _ = self.actor(voxels_tsr, numpoints_tsr, coordinates_tsr, obs_robot_tsr, compute_log_pi=False, downstream=True)
             return pi.cpu().data.numpy().flatten()
 
     def update_critic(self, voxels, coordinates, numpoints, robots, action, reward, next_voxels, next_coordinates, next_numpoints, next_robots, not_done, L, step):
