@@ -143,8 +143,8 @@ class DataProcessor(object):
 
 class ReplayBuffer(Dataset):
     """Buffer to store environment transitions."""
-    def __init__(self, action_shape, capacity, batch_size, device, point_cloud_range, num_point_features, voxel_size, max_num_points_per_voxel, max_num_voxels, transform=None):
-        self.data_processor = DataProcessor(point_cloud_range, num_point_features, voxel_size, max_num_points_per_voxel, max_num_voxels)
+    def __init__(self, action_shape, capacity, batch_size, device, data_processor, transform=None):
+        self.data_processor = data_processor
         
         self.capacity = capacity
         self.batch_size = batch_size
