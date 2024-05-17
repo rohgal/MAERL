@@ -91,13 +91,21 @@ class LidarEncoder(nn.Module):
             nn.ReLU(),
         )
 
-    def forward(self, voxel_features, voxel_coordinates):
-        input_sp_tensor = spconv.SparseConvTensor(
+    def forward(self, voxel_features, voxel_coordinates, downstream=False):
+        if downstream:
+            input_sp_tensor = spconv.SparseConvTensor(
             features=voxel_features,
             indices=voxel_coordinates.int(),
             spatial_shape=self.sparse_shape,
-            batch_size=self.batch_size
-        )
+            batch_size=1,
+            )
+        else:
+            input_sp_tensor = spconv.SparseConvTensor(
+                features=voxel_features,
+                indices=voxel_coordinates.int(),
+                spatial_shape=self.sparse_shape,
+                batch_size=self.batch_size,
+            )
 
         x = self.conv_input(input_sp_tensor)
         x_conv1 = self.conv1(x)
