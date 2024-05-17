@@ -13,8 +13,6 @@ from gazebo_env import GazeboEnv
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--frame_stack', default=3, type=int)
-    parser.add_argument('--npoints', default=20000, type=int)
     # voxelizer
     parser.add_argument('--num_point_features', default=3, type=int)
     parser.add_argument('--point_cloud_range', nargs="*", default=[-5.0, -5.0, -0.35, 5.0, 5.0, 0.65], type=float)
@@ -30,8 +28,8 @@ def parse_args():
     parser.add_argument('--batch_size', default=4, type=int)
     parser.add_argument('--hidden_dim', default=1024, type=int)
     # eval
-    parser.add_argument('--eval_freq', default=1000000, type=int)
-    parser.add_argument('--num_eval_episodes', default=10, type=int)
+    # parser.add_argument('--eval_freq', default=1000000, type=int)
+    # parser.add_argument('--num_eval_episodes', default=10, type=int)
     # critic
     parser.add_argument('--critic_lr', default=1e-3, type=float)
     parser.add_argument('--critic_beta', default=0.9, type=float)
