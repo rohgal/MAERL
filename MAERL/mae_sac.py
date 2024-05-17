@@ -56,7 +56,7 @@ class Actor(nn.Module):
         self.apply(weight_init)
 
     def forward(
-        self, voxels, voxel_numpoints, voxel_coordinates, robot_states, compute_pi=True, compute_log_pi=True, detach_encoder=False, downstream=False
+        self, voxels, voxel_coordinates, voxel_numpoints, robot_states, compute_pi=True, compute_log_pi=True, detach_encoder=False, downstream=False
     ):
         if downstream:
             voxel_features = self.vfe(voxels, voxel_numpoints)
@@ -153,7 +153,7 @@ class Critic(nn.Module):
         self.outputs = dict()
         self.apply(weight_init)
 
-    def forward(self, voxels, voxel_numpoints, voxel_coordinates, robot_states, action, detach_encoder=False):
+    def forward(self, voxels, voxel_coordinates, voxel_numpoints, robot_states, action, detach_encoder=False):
         if detach_encoder:
             with torch.no_grad():
                 voxel_features = self.vfe(voxels, voxel_numpoints)
@@ -203,7 +203,7 @@ class OccupancyMAE(nn.Module):
         loss = self.criterion(pred, target)
         return loss
 
-    def forward(self, voxels, voxel_numpoints, voxel_coordinates):
+    def forward(self, voxels, voxel_coordinates, voxel_numpoints):
         voxel_features = self.vfe(voxels, voxel_numpoints)
 
         select_ratio = 1 - self.mask_ratio
@@ -349,7 +349,7 @@ class MAESacAgent(object):
             )
             return mu.cpu().data.numpy().flatten()
 
-    def sample_action(self, voxels, numpoints, coordinates, obs_robot):
+    def sample_action(self, voxels, coordinates, numpoints, obs_robot):
         with torch.no_grad():
             batch_index = np.full((coordinates.shape[0], 1), 0, dtype=np.int32)
             batched_coordinates = np.concatenate((batch_index, coordinates), axis=1)
@@ -360,20 +360,20 @@ class MAESacAgent(object):
             obs_robot_tsr = torch.as_tensor(obs_robot, device=self.device)
             obs_robot_tsr = obs_robot_tsr.unsqueeze(0)
 
-            mu, pi, _, _ = self.actor(voxels_tsr, numpoints_tsr, coordinates_tsr, obs_robot_tsr, compute_log_pi=False, downstream=True)
+            mu, pi, _, _ = self.actor(voxels_tsr, coordinates_tsr, numpoints_tsr, obs_robot_tsr, compute_log_pi=False, downstream=True)
             return pi.cpu().data.numpy().flatten()
 
     def update_critic(self, voxels, coordinates, numpoints, robots, action, reward, next_voxels, next_coordinates, next_numpoints, next_robots, not_done, L, step):
         with torch.no_grad():
-            _, policy_action, log_pi, _ = self.actor(next_voxels, next_numpoints, next_coordinates, next_robots)
-            target_Q1, target_Q2 = self.critic_target(next_voxels, next_numpoints, next_coordinates, next_robots, policy_action)
+            _, policy_action, log_pi, _ = self.actor(next_voxels, next_coordinates, next_numpoints, next_robots)
+            target_Q1, target_Q2 = self.critic_target(next_voxels, next_coordinates, next_numpoints, next_robots, policy_action)
             target_V = torch.min(target_Q1,
                                  target_Q2) - self.alpha.detach() * log_pi
             target_Q = reward + (not_done * self.discount * target_V)
 
         # get current Q estimates
         current_Q1, current_Q2 = self.critic(
-            voxels, numpoints, coordinates, robots, action, detach_encoder=self.detach_encoder)
+            voxels, coordinates, numpoints, robots, action, detach_encoder=self.detach_encoder)
         critic_loss = F.mse_loss(current_Q1,
                                  target_Q) + F.mse_loss(current_Q2, target_Q)
         
@@ -389,8 +389,8 @@ class MAESacAgent(object):
 
     def update_actor_and_alpha(self, voxels, coordinates, numpoints, robots, L, step):
         # detach encoder, so we don't update it with the actor loss
-        _, pi, log_pi, log_std = self.actor(voxels, numpoints, coordinates, robots, detach_encoder=True)
-        actor_Q1, actor_Q2 = self.critic(voxels, numpoints, coordinates, robots, pi, detach_encoder=True)
+        _, pi, log_pi, log_std = self.actor(voxels, coordinates, numpoints, robots, detach_encoder=True)
+        actor_Q1, actor_Q2 = self.critic(voxels, coordinates, numpoints, robots, pi, detach_encoder=True)
 
         actor_Q = torch.min(actor_Q1, actor_Q2)
         actor_loss = (self.alpha.detach() * log_pi - actor_Q).mean()
@@ -419,8 +419,8 @@ class MAESacAgent(object):
         alpha_loss.backward()
         self.log_alpha_optimizer.step()
 
-    def update_mae(self, voxels, numpoints, coordinates, L, step):
-        pred, target = self.OccupancyMAE(voxels, numpoints, coordinates)
+    def update_mae(self, voxels, coordinates, numpoints, L, step):
+        pred, target = self.OccupancyMAE(voxels, coordinates, numpoints)
         loss = self.OccupancyMAE.get_loss(pred, target)
 
         self.mae_optimizer.zero_grad()
@@ -440,8 +440,8 @@ class MAESacAgent(object):
 
         self.update_critic(voxels, coordinates, numpoints, robots, actions, rewards, next_voxels, next_coordinates, next_numpoints, next_robots, not_done, L, step)
 
-        if step % self.actor_update_freq == 0:
-            self.update_actor_and_alpha(voxels, coordinates, numpoints, robots, L, step)
+        # if step % self.actor_update_freq == 0:
+        #     self.update_actor_and_alpha(voxels, coordinates, numpoints, robots, L, step)
 
         # if step % self.critic_target_update_freq == 0:
         #     soft_update_params(
@@ -456,7 +456,7 @@ class MAESacAgent(object):
         #     )
         
         if step % self.mae_update_freq == 0:
-            self.update_mae(voxels, numpoints, coordinates, L, step)
+            self.update_mae(voxels, coordinates, numpoints, L, step)
 
     def save(self, model_dir, step):
         torch.save(

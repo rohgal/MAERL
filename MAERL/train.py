@@ -204,7 +204,7 @@ def main():
         else:
             with utils.eval_mode(agent):
                 voxels, coordinates, numpoints = data_processor.forward(obs_sensor)
-                action = agent.sample_action(voxels, numpoints, coordinates, obs_robot)
+                action = agent.sample_action(voxels, coordinates, numpoints, obs_robot)
 
         # run training update
         if step >= args.init_steps:
