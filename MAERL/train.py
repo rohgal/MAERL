@@ -193,15 +193,16 @@ def main():
             episode += 1
             L.log('train/episode', episode, step)
 
-        # action = env.action_space.sample()
+        # a_in = env.action_space.sample()
 
         # sample action for data collection
         if step < args.init_steps:
-            action = env.action_space.sample()
+            a_in = env.action_space.sample()
         else:
             with utils.eval_mode(agent):
                 voxels, coordinates, numpoints = data_processor.forward(obs_sensor)
                 action = agent.sample_action(voxels, coordinates, numpoints, obs_robot)
+                a_in = [(action[0] + 1) / 2, action[1]]
 
         # run training update
         if step >= args.init_steps:
@@ -209,7 +210,7 @@ def main():
             for _ in range(num_updates):
                 agent.update(replay_buffer, L, step)
         
-        next_obs_sensor, next_obs_robot, reward, done = env.step(action)
+        next_obs_sensor, next_obs_robot, reward, done = env.step(a_in)
 
         # allow infinit bootstrap
         done_bool = 0 if episode_step + 1 == env._max_episode_steps else float(
