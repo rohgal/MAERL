@@ -107,7 +107,7 @@ class GazeboEnv:
 
         laser_state = self.get_laser_obs()
         theta, distance = self.calculate_polar_goal(self.robot_x, self.robot_y, self.goal_x, self.goal_y, self.robot_yaw)
-        robot_state = np.array([distance, theta, 0.0, 0.0])
+        robot_state = np.array([distance, theta, 0.0, 0.0], dtype=np.float32)
 
         return laser_state, robot_state
 
