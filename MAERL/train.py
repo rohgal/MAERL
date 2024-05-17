@@ -175,7 +175,6 @@ def main():
     start_time = time.time()
 
     for step in range(args.num_train_steps):
-        start_time = time.time()
         # if step % args.eval_freq == 0:
         #     L.log('eval/episode', episode, step)
         #     evaluate(env, agent, video, args.num_eval_episodes, L, step,args)
@@ -224,9 +223,6 @@ def main():
         obs_sensor = next_obs_sensor
         obs_robot = next_obs_robot
         episode_step += 1
-
-        elapsed_time = time.time()
-        print(elapsed_time - start_time)
 
 
 if __name__ == '__main__':
