@@ -198,6 +198,7 @@ def main():
         # sample action for data collection
         if step < args.init_steps:
             a_in = env.action_space.sample()
+            action = [2 * a_in[0] - 1, a_in[1]]
         else:
             with utils.eval_mode(agent):
                 voxels, coordinates, numpoints = data_processor.forward(obs_sensor)

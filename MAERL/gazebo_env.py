@@ -121,7 +121,7 @@ class GazeboEnv:
         self.update_robot_cur_pose()
         theta, distance = self.calculate_polar_goal(self.robot_x, self.robot_y, self.goal_x, self.goal_y, self.robot_yaw)
         target = self.check_goal_reached(distance)
-        robot_state = np.array([distance, theta, action[0], action[1]])
+        robot_state = np.array([distance, theta, action[0], action[1]], dtype=np.float32)
         reward = self.get_reward(target, collision, action, min_laser)
         done = collision or target
 
