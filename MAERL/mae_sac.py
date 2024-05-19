@@ -28,9 +28,12 @@ def squash(mu, pi, log_pi):
 
 def weight_init(m):
     """Custom weight init for Conv2D and Linear layers."""
+    # if isinstance(m, nn.Linear):
+    #     nn.init.kaiming_uniform_(m.weight, mode='fan_in', nonlinearity='relu')
+    #     nn.init.constant_(m.bias, 0.0)
     if isinstance(m, nn.Linear):
-        nn.init.kaiming_uniform_(m.weight, mode='fan_in', nonlinearity='relu')
-        nn.init.constant_(m.bias, 0.0)
+        nn.init.orthogonal_(m.weight.data)
+        m.bias.data.fill_(0.0)
 
 
 class Actor(nn.Module):
@@ -175,8 +178,6 @@ class Critic(nn.Module):
     def log(self, L, step, log_freq=LOG_FREQ):
         if step % log_freq != 0:
             return
-
-        self.encoder.log(L, step, log_freq)
 
         for k, v in self.outputs.items():
             L.log_histogram('train_critic/%s_hist' % k, v, step)
@@ -438,22 +439,22 @@ class MAESacAgent(object):
         if step % self.log_interval == 0:
             L.log('train/batch_reward', rewards.mean(), step)
 
-        self.update_critic(voxels, coordinates, numpoints, robots, actions, rewards, next_voxels, next_coordinates, next_numpoints, next_robots, not_done, L, step)
+        # self.update_critic(voxels, coordinates, numpoints, robots, actions, rewards, next_voxels, next_coordinates, next_numpoints, next_robots, not_done, L, step)
 
-        if step % self.actor_update_freq == 0:
-            self.update_actor_and_alpha(voxels, coordinates, numpoints, robots, L, step)
+        # if step % self.actor_update_freq == 0:
+        #     self.update_actor_and_alpha(voxels, coordinates, numpoints, robots, L, step)
 
-        if step % self.critic_target_update_freq == 0:
-            soft_update_params(
-                self.critic.Q1, self.critic_target.Q1, self.critic_tau
-            )
-            soft_update_params(
-                self.critic.Q2, self.critic_target.Q2, self.critic_tau
-            )
-            soft_update_params(
-                self.critic.encoder, self.critic_target.encoder,
-                self.encoder_tau
-            )
+        # if step % self.critic_target_update_freq == 0:
+        #     soft_update_params(
+        #         self.critic.Q1, self.critic_target.Q1, self.critic_tau
+        #     )
+        #     soft_update_params(
+        #         self.critic.Q2, self.critic_target.Q2, self.critic_tau
+        #     )
+        #     soft_update_params(
+        #         self.critic.encoder, self.critic_target.encoder,
+        #         self.encoder_tau
+        #     )
         
         if step % self.mae_update_freq == 0:
             self.update_mae(voxels, coordinates, numpoints, L, step)
