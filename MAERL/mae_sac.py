@@ -439,22 +439,22 @@ class MAESacAgent(object):
         if step % self.log_interval == 0:
             L.log('train/batch_reward', rewards.mean(), step)
 
-        # self.update_critic(voxels, coordinates, numpoints, robots, actions, rewards, next_voxels, next_coordinates, next_numpoints, next_robots, not_done, L, step)
+        self.update_critic(voxels, coordinates, numpoints, robots, actions, rewards, next_voxels, next_coordinates, next_numpoints, next_robots, not_done, L, step)
 
-        # if step % self.actor_update_freq == 0:
-        #     self.update_actor_and_alpha(voxels, coordinates, numpoints, robots, L, step)
+        if step % self.actor_update_freq == 0:
+            self.update_actor_and_alpha(voxels, coordinates, numpoints, robots, L, step)
 
-        # if step % self.critic_target_update_freq == 0:
-        #     soft_update_params(
-        #         self.critic.Q1, self.critic_target.Q1, self.critic_tau
-        #     )
-        #     soft_update_params(
-        #         self.critic.Q2, self.critic_target.Q2, self.critic_tau
-        #     )
-        #     soft_update_params(
-        #         self.critic.encoder, self.critic_target.encoder,
-        #         self.encoder_tau
-        #     )
+        if step % self.critic_target_update_freq == 0:
+            soft_update_params(
+                self.critic.Q1, self.critic_target.Q1, self.critic_tau
+            )
+            soft_update_params(
+                self.critic.Q2, self.critic_target.Q2, self.critic_tau
+            )
+            soft_update_params(
+                self.critic.encoder, self.critic_target.encoder,
+                self.encoder_tau
+            )
         
         if step % self.mae_update_freq == 0:
             self.update_mae(voxels, coordinates, numpoints, L, step)
