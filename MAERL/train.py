@@ -217,6 +217,7 @@ def main():
         done_bool = 0 if episode_step + 1 == env._max_episode_steps else float(
             done
         )
+        done = True if episode_step + 1 == env._max_episode_steps
         episode_reward += reward
         replay_buffer.add(obs_sensor, obs_robot, action, reward, next_obs_sensor, next_obs_robot, done_bool)
 

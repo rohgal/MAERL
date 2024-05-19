@@ -32,7 +32,7 @@ class GazeboEnv:
         self.action_space = gym.spaces.Box(low=np.array([0.0, -1.0]),
                                 high=np.array([1.0, 1.0]),
                                 dtype=np.float32)
-        self._max_episode_steps = 650
+        self._max_episode_steps = 800
 
         self.robot_x = None
         self.robot_y = None
