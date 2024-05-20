@@ -20,10 +20,10 @@ def parse_args():
     parser.add_argument('--max_num_points_per_voxel', default=10, type=int)
     parser.add_argument('--max_num_voxels', default=60000, type=int)
     # replay buffer
-    parser.add_argument('--replay_buffer_capacity', default=1000, type=int)
+    parser.add_argument('--replay_buffer_capacity', default=10000, type=int)
     # train
     parser.add_argument('--agent', default='mae_sac', type=str)
-    parser.add_argument('--init_steps', default=1000, type=int)
+    parser.add_argument('--init_steps', default=100000, type=int)
     parser.add_argument('--num_train_steps', default=1000000, type=int)
     parser.add_argument('--batch_size', default=4, type=int)
     parser.add_argument('--hidden_dim', default=1024, type=int)
@@ -40,7 +40,7 @@ def parse_args():
     parser.add_argument('--actor_beta', default=0.9, type=float)
     parser.add_argument('--actor_log_std_min', default=-10, type=float)
     parser.add_argument('--actor_log_std_max', default=2, type=float)
-    parser.add_argument('--actor_update_freq', default=1, type=int)
+    parser.add_argument('--actor_update_freq', default=2, type=int)
     # mae
     parser.add_argument('--encoder_lr', default=1e-3, type=float)
     parser.add_argument('--encoder_tau', default=0.05, type=float)
