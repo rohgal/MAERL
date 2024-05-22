@@ -34,7 +34,7 @@ def parse_args():
     parser.add_argument('--critic_lr', default=1e-3, type=float)
     parser.add_argument('--critic_beta', default=0.9, type=float)
     parser.add_argument('--critic_tau', default=0.05, type=float) # try 0.05 or 0.1
-    parser.add_argument('--critic_target_update_freq', default=2, type=int) # try to change it to 1 and retain 0.01 above
+    parser.add_argument('--critic_target_update_freq', default=4, type=int) # try to change it to 1 and retain 0.01 above
     # actor
     parser.add_argument('--actor_lr', default=1e-3, type=float)
     parser.add_argument('--actor_beta', default=0.9, type=float)
@@ -193,8 +193,6 @@ def main():
             episode += 1
             L.log('train/episode', episode, step)
 
-        # a_in = env.action_space.sample()
-
         # sample action for data collection
         if step < args.init_steps:
             a_in = env.action_space.sample()
@@ -219,6 +217,7 @@ def main():
         )
         if episode_step + 1 == env._max_episode_steps:
             done = True
+
         episode_reward += reward
         replay_buffer.add(obs_sensor, obs_robot, action, reward, next_obs_sensor, next_obs_robot, done_bool)
 

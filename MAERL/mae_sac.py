@@ -27,7 +27,7 @@ def squash(mu, pi, log_pi):
 
 
 def weight_init(m):
-    """Custom weight init for Conv2D and Linear layers."""
+    """Custom weight init for Linear layers. Encoder is initialized with kaiming uniform automatically"""
     # if isinstance(m, nn.Linear):
     #     nn.init.kaiming_uniform_(m.weight, mode='fan_in', nonlinearity='relu')
     #     nn.init.constant_(m.bias, 0.0)
@@ -102,7 +102,6 @@ class Actor(nn.Module):
             log_pi = None
 
         mu, pi, log_pi = squash(mu, pi, log_pi)
-
         return mu, pi, log_pi, log_std
 
 
@@ -131,7 +130,6 @@ class QFunction(nn.Module):
 
     def forward(self, encoder_out, robot_states, action):
         assert encoder_out.size(0) == action.size(0)
-
         obs_action = torch.cat([encoder_out, robot_states, action], dim=1)
         return self.trunk(obs_action)
 
@@ -172,7 +170,6 @@ class Critic(nn.Module):
 
         self.outputs['q1'] = q1
         self.outputs['q2'] = q2
-
         return q1, q2
 
     def log(self, L, step, log_freq=LOG_FREQ):
@@ -188,7 +185,7 @@ class Critic(nn.Module):
 
 
 class OccupancyMAE(nn.Module):
-
+    """Occupancy-MAE"""
     def __init__(self, critic, mask_ratio):
         super().__init__()
         self.vfe = critic.vfe
@@ -207,6 +204,7 @@ class OccupancyMAE(nn.Module):
     def forward(self, voxels, voxel_coordinates, voxel_numpoints):
         voxel_features = self.vfe(voxels, voxel_numpoints)
 
+        # range-aware ramdom masking
         select_ratio = 1 - self.mask_ratio
         voxel_coords_distance = (voxel_features[:,0]**2 + voxel_features[:,1]**2)**0.5
 
@@ -246,7 +244,6 @@ class OccupancyMAE(nn.Module):
 
         pred = reconstructed
         target = input_sp_tensor_ones.dense()
-
         return pred, target
 
 
@@ -302,15 +299,15 @@ class MAESacAgent(object):
 
         self.critic_target.load_state_dict(self.critic.state_dict())
 
-        # tie encoders between actor and critic, and CURL and critic
+        # tie encoders between actor and critic
         self.actor.encoder.copy_conv_weights_from(self.critic.encoder)
 
         self.log_alpha = torch.tensor(np.log(init_temperature)).to(device)
         self.log_alpha.requires_grad = True
+        
         # set target entropy to -|A|
         self.target_entropy = -np.prod(action_shape)
-        
-        # optimizers
+
         self.actor_optimizer = torch.optim.Adam(
             self.actor.parameters(), lr=actor_lr, betas=(actor_beta, 0.999)
         )
@@ -345,9 +342,7 @@ class MAESacAgent(object):
         with torch.no_grad():
             obs = torch.FloatTensor(obs).to(self.device)
             obs = obs.unsqueeze(0)
-            mu, _, _, _ = self.actor(
-                obs, compute_pi=False, compute_log_pi=False
-            )
+            mu, _, _, _ = self.actor(obs, compute_pi=False, compute_log_pi=False)
             return mu.cpu().data.numpy().flatten()
 
     def sample_action(self, voxels, coordinates, numpoints, obs_robot):
@@ -372,7 +367,6 @@ class MAESacAgent(object):
                                  target_Q2) - self.alpha.detach() * log_pi
             target_Q = reward + (not_done * self.discount * target_V)
 
-        # get current Q estimates
         current_Q1, current_Q2 = self.critic(
             voxels, coordinates, numpoints, robots, action, detach_encoder=self.detach_encoder)
         critic_loss = F.mse_loss(current_Q1,
@@ -381,11 +375,9 @@ class MAESacAgent(object):
         if step % self.log_interval == 0:
             L.log('train_critic/loss', critic_loss, step)
 
-        # Optimize the critic
         self.critic_optimizer.zero_grad()
         critic_loss.backward()
         self.critic_optimizer.step()
-
         self.critic.log(L, step)
 
     def update_actor_and_alpha(self, voxels, coordinates, numpoints, robots, L, step):
@@ -404,11 +396,9 @@ class MAESacAgent(object):
         if step % self.log_interval == 0:                                    
             L.log('train_actor/entropy', entropy.mean(), step)
 
-        # optimize the actor
         self.actor_optimizer.zero_grad()
         actor_loss.backward()
         self.actor_optimizer.step()
-
         self.actor.log(L, step)
 
         self.log_alpha_optimizer.zero_grad()
@@ -439,7 +429,9 @@ class MAESacAgent(object):
         if step % self.log_interval == 0:
             L.log('train/batch_reward', rewards.mean(), step)
 
-        self.update_critic(voxels, coordinates, numpoints, robots, actions, rewards, next_voxels, next_coordinates, next_numpoints, next_robots, not_done, L, step)
+        self.update_critic(voxels, coordinates, numpoints, robots, actions, rewards, \
+                            next_voxels, next_coordinates, next_numpoints, next_robots, \
+                            not_done, L, step)
 
         if step % self.actor_update_freq == 0:
             self.update_actor_and_alpha(voxels, coordinates, numpoints, robots, L, step)
