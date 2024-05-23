@@ -39,7 +39,6 @@ def post_act_block(in_channels, out_channels, kernel_size, indice_key=None, stri
         norm_fn(out_channels),
         nn.ReLU(),
     )
-
     return m
 
 
@@ -114,7 +113,6 @@ class LidarEncoder(nn.Module):
         x_conv4 = self.conv4(x_conv3)
         x_out = self.conv_out(x_conv4)
         out_dense = x_out.dense()
-
         return out_dense
 
     def copy_conv_weights_from(self, source):
@@ -163,5 +161,4 @@ class LidarDecoder(nn.Module):
         x_up2 = self.deconv2(x_up1)
         x_up3 = self.deconv3(x_up2)
         out = x_up3
-
         return out

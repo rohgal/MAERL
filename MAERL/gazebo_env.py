@@ -108,7 +108,6 @@ class GazeboEnv:
         laser_state = self.get_laser_obs()
         theta, distance = self.calculate_polar_goal(self.robot_x, self.robot_y, self.goal_x, self.goal_y, self.robot_yaw)
         robot_state = np.array([distance, theta, 0.0, 0.0], dtype=np.float32)
-
         return laser_state, robot_state
 
     def step(self, action):
@@ -283,7 +282,6 @@ class GazeboEnv:
             collision = True
         else:
             collision = False
-        
         return collision, min_laser
 
     @staticmethod
@@ -323,7 +321,6 @@ class GazeboEnv:
         distance = np.linalg.norm(
             [odom_x - goal_x, odom_y - goal_y]
         )
-
         return np.float32(theta), np.float32(distance)
 
     @staticmethod
@@ -332,5 +329,4 @@ class GazeboEnv:
             target = True
         else:
             target = False
-
         return target
