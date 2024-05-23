@@ -28,16 +28,32 @@ def squash(mu, pi, log_pi):
 
 def weight_init(m):
     """Custom weight init for Linear layers. Encoder is initialized with kaiming uniform automatically"""
+    # if isinstance(m, nn.Linear):
+    #     nn.init.normal_(m.weight, std=0.05)
+    #     if m.bias is not None:
+    #         nn.init.constant_(m.bias, 0)
+    # elif isinstance(m, spconv.SubMConv3d):
+    #     nn.init.normal_(m.weight, std=0.05)
+    #     if m.bias is not None:
+    #         nn.init.constant_(m.bias, 0)
+    # elif isinstance(m, spconv.SparseConv3d):
+    #     nn.init.normal_(m.weight, std=0.05)
+    #     if m.bias is not None:
+    #         nn.init.constant_(m.bias, 0)
+    # elif isinstance(m, nn.BatchNorm1d):
+    #     nn.init.constant_(m.bias, 0)
+    #     nn.init.constant_(m.weight, 1.0)
+
     if isinstance(m, nn.Linear):
-        nn.init.normal_(m.weight, std=0.05)
+        nn.init.xavier_normal_(m.weight)
         if m.bias is not None:
             nn.init.constant_(m.bias, 0)
     elif isinstance(m, spconv.SubMConv3d):
-        nn.init.normal_(m.weight, std=0.05)
+        nn.init.xavier_normal_(m.weight)
         if m.bias is not None:
             nn.init.constant_(m.bias, 0)
     elif isinstance(m, spconv.SparseConv3d):
-        nn.init.normal_(m.weight, std=0.05)
+        nn.init.xavier_normal_(m.weight)
         if m.bias is not None:
             nn.init.constant_(m.bias, 0)
     elif isinstance(m, nn.BatchNorm1d):
