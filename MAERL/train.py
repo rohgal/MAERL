@@ -47,7 +47,7 @@ def parse_args():
     parser.add_argument('--mask_ratio', default=0.8, type=float)
     # sac
     parser.add_argument('--discount', default=0.99, type=float)
-    parser.add_argument('--init_temperature', default=0.2, type=float)
+    parser.add_argument('--init_temperature', default=1.0, type=float)
     parser.add_argument('--alpha_lr', default=1e-4, type=float)
     parser.add_argument('--alpha_beta', default=0.5, type=float)
     # misc
