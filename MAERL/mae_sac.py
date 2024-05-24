@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from utils import soft_update_params
+from utils import soft_update_params, compare_weights
 from encoder import LidarEncoder, LidarDecoder
 from mean_vfe import MeanVFE
 from spconv_utils import spconv
