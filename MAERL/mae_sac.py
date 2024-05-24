@@ -27,7 +27,7 @@ def squash(mu, pi, log_pi):
 
 
 def weight_init(m):
-    """Custom weight init for Linear layers. Encoder is initialized with kaiming uniform automatically"""
+    """Custom weight init"""
     # if isinstance(m, nn.Linear):
     #     nn.init.normal_(m.weight, std=0.05)
     #     if m.bias is not None:
