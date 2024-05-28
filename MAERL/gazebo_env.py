@@ -2,6 +2,7 @@ import math
 import os
 import subprocess
 import time
+from collections import deque
 from os import path
 import numpy as np
 import rospy
@@ -33,6 +34,7 @@ class GazeboEnv:
                                 high=np.array([1.0, 1.0]),
                                 dtype=np.float32)
         self._max_episode_steps = 800
+        self.episode_step = 0
 
         self.robot_x = None
         self.robot_y = None
@@ -40,6 +42,8 @@ class GazeboEnv:
 
         self.goal_x = None
         self.goal_y = None
+
+        self.distance_history = deque(maxlen=4)
 
         self.last_odom = None
         self.velodyne_data = []
@@ -99,6 +103,7 @@ class GazeboEnv:
         )
 
     def reset(self):
+        self.episode_step = 0
         self.pub_action([0.0, 0.0])
         self.reset_sim()
         self.spawn_robot()
@@ -107,6 +112,8 @@ class GazeboEnv:
 
         laser_state = self.get_laser_obs()
         theta, distance = self.calculate_polar_goal(self.robot_x, self.robot_y, self.goal_x, self.goal_y, self.robot_yaw)
+        self.distance_history.extend([distance] * 4)
+
         robot_state = np.array([distance, theta, 0.0, 0.0], dtype=np.float32)
         return laser_state, robot_state
 
@@ -116,17 +123,17 @@ class GazeboEnv:
         self.propagate_sim()
 
         laser_state = self.get_laser_obs()
-        collision, min_laser = self.check_collision(self.velodyne_data)
+        collision, _ = self.check_collision(self.velodyne_data)
         self.update_robot_cur_pose()
-        theta, distance = self.calculate_polar_goal(self.robot_x, self.robot_y, self.goal_x, self.goal_y, self.robot_yaw)
-        target = self.check_goal_reached(distance)
-        robot_state = np.array([distance, theta, action[0], action[1]], dtype=np.float32)
-        reward = self.get_reward(target, collision, action, min_laser)
-        done = collision or target
+        theta, dist_curr = self.calculate_polar_goal(self.robot_x, self.robot_y, self.goal_x, self.goal_y, self.robot_yaw)
+        target = self.check_goal_reached(dist_curr)
+        self.distance_history.append(dist_curr)
+        timeout = (self.episode_step+1 == self._max_episode_steps)
+        reward = self.get_reward(target, collision, timeout, dist_curr, self.distance_history[0])
+        done = collision or timeout or target
 
-        # print("collistion :", collision, "|", "target :", target, "|", "done :", done)
-        # print("min_laser :", min_laser)
-
+        robot_state = np.array([dist_curr, theta, action[0], action[1]], dtype=np.float32)
+        self.episode_step+=1
         return laser_state, robot_state, reward, done
 
     def spawn_robot(self):
@@ -285,14 +292,13 @@ class GazeboEnv:
         return collision, min_laser
 
     @staticmethod
-    def get_reward(target, collision, action, min_laser):
+    def get_reward(target, collision, timeout, dist_curr, dist_prev):
         if target:
-            return np.float32(100.0)
-        elif collision:
-            return np.float32(-100.0)
+            return np.float32(8.0)
+        elif collision or timeout:
+            return np.float32(-5.0)
         else:
-            r3 = lambda x: 1 - x if x < 1 else 0.0
-            return np.float32(action[0] / 2 - abs(action[1]) / 2 - r3(min_laser) / 2)
+            return -5/800 + 0.5*(dist_prev - dist_curr)
         
     @staticmethod
     def calculate_polar_goal(odom_x, odom_y, goal_x, goal_y, angle):

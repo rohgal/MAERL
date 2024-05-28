@@ -33,7 +33,7 @@ def parse_args():
     # critic
     parser.add_argument('--critic_lr', default=1e-3, type=float)
     parser.add_argument('--critic_beta', default=0.9, type=float)
-    parser.add_argument('--critic_tau', default=0.05, type=float)
+    parser.add_argument('--critic_tau', default=0.001, type=float)
     parser.add_argument('--critic_target_update_freq', default=2, type=int) # try to change it to 1 and retain 0.01 above
     # actor
     parser.add_argument('--actor_lr', default=1e-3, type=float)
@@ -43,7 +43,7 @@ def parse_args():
     parser.add_argument('--actor_update_freq', default=2, type=int)
     # mae
     parser.add_argument('--encoder_lr', default=1e-3, type=float)
-    parser.add_argument('--encoder_tau', default=0.05, type=float)
+    parser.add_argument('--encoder_tau', default=0.001, type=float)
     parser.add_argument('--mask_ratio', default=0.8, type=float)
     # sac
     parser.add_argument('--discount', default=0.99, type=float)
@@ -211,15 +211,8 @@ def main():
         
         next_obs_sensor, next_obs_robot, reward, done = env.step(a_in)
 
-        # allow infinit bootstrap
-        done_bool = 0 if episode_step + 1 == env._max_episode_steps else float(
-            done
-        )
-        if episode_step + 1 == env._max_episode_steps:
-            done = True
-
         episode_reward += reward
-        replay_buffer.add(obs_sensor, obs_robot, action, reward, next_obs_sensor, next_obs_robot, done_bool)
+        replay_buffer.add(obs_sensor, obs_robot, action, reward, next_obs_sensor, next_obs_robot, done)
 
         obs_sensor = next_obs_sensor
         obs_robot = next_obs_robot

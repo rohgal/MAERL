@@ -30,6 +30,14 @@ class eval_mode(object):
         return False
 
 
+def compare_weights(model1, model2):
+    for (name1, param1), (name2, param2) in zip(model1.named_parameters(), model2.named_parameters()):
+        if torch.equal(param1, param2):
+            print(f"Layer {name1} and {name2} have the same weights.")
+        else:
+            print(f"Layer {name1} and {name2} have different weights.")
+
+
 def soft_update_params(net, target_net, tau):
     for param, target_param in zip(net.parameters(), target_net.parameters()):
         target_param.data.copy_(
