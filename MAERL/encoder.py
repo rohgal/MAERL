@@ -8,7 +8,13 @@ from spconv_utils import spconv
 
 def tie_weights(src, trg):
     assert type(src) == type(trg)
-    if any(isinstance(layer, spconv.SparseSequential) for layer in src._modules.values()):
+    if isinstance(src, nn.Linear):
+        trg.weight = src.weight
+        trg.bias = src.bias
+    elif isinstance(src, nn.LayerNorm):
+        trg.weight = src.weight
+        trg.bias = src.bias
+    elif any(isinstance(layer, spconv.SparseSequential) for layer in src._modules.values()):
         for i in range(len(src)):
             iter_num = len(src) - int(any(isinstance(layer, nn.ReLU) for layer in src[i]._modules.values()))
             for j in range(iter_num):
@@ -47,7 +53,7 @@ class LidarEncoder(nn.Module):
         super().__init__()
         self.sparse_shape = grid_size[::-1] + [1, 0, 0]
         self.batch_size = batch_size
-        self.feature_dim = 98304
+        self.feature_dim = 100
 
         norm_fn = partial(nn.BatchNorm1d, eps=1e-3, momentum=0.01)
 
@@ -90,6 +96,9 @@ class LidarEncoder(nn.Module):
             nn.ReLU(),
         )
 
+        self.fc = nn.Linear(98304, self.feature_dim)
+        self.ln = nn.LayerNorm(self.feature_dim)
+
     def forward(self, voxel_features, voxel_coordinates, downstream=False):
         if downstream:
             input_sp_tensor = spconv.SparseConvTensor(
@@ -113,7 +122,11 @@ class LidarEncoder(nn.Module):
         x_conv4 = self.conv4(x_conv3)
         x_out = self.conv_out(x_conv4)
         out_dense = x_out.dense()
-        return out_dense
+
+        h = out_dense.view(out_dense.size(0), -1)
+        h_fc = self.fc(h)
+        h_norm = self.ln(h_fc)
+        return h_norm
 
     def copy_conv_weights_from(self, source):
         tie_weights(src=source.conv_input, trg=self.conv_input)
@@ -122,6 +135,9 @@ class LidarEncoder(nn.Module):
         tie_weights(src=source.conv3, trg=self.conv3)
         tie_weights(src=source.conv4, trg=self.conv4)
         tie_weights(src=source.conv_out, trg=self.conv_out)
+        tie_weights(src=source.fc, trg=self.fc)
+        tie_weights(src=source.ln, trg=self.ln)
+        
 
     # def log(self, L, step, log_freq):
     #     if step % log_freq != 0:
@@ -138,27 +154,27 @@ class LidarEncoder(nn.Module):
     #     L.log_param('train_encoder/ln', self.ln, step)
 
 
-class LidarDecoder(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.deconv1 = nn.Sequential(
-            nn.ConvTranspose3d(96, 48, 3, padding=(0,1,1), stride=2, bias=False),
-            nn.BatchNorm3d(48),
-            nn.ReLU()
-        )
-        self.deconv2 = nn.Sequential(
-            nn.ConvTranspose3d(48, 16, 3, padding=(0,1,1), stride=(3,2,2), bias=False),
-            nn.BatchNorm3d(16),
-            nn.ReLU()
-        )
-        self.deconv3 = nn.Sequential(
-            nn.ConvTranspose3d(16, 1, 3, padding=1, output_padding=1, stride=(3,2,2), bias=False),
-        )
+# class LidarDecoder(nn.Module):
+#     def __init__(self):
+#         super().__init__()
+#         self.deconv1 = nn.Sequential(
+#             nn.ConvTranspose3d(96, 48, 3, padding=(0,1,1), stride=2, bias=False),
+#             nn.BatchNorm3d(48),
+#             nn.ReLU()
+#         )
+#         self.deconv2 = nn.Sequential(
+#             nn.ConvTranspose3d(48, 16, 3, padding=(0,1,1), stride=(3,2,2), bias=False),
+#             nn.BatchNorm3d(16),
+#             nn.ReLU()
+#         )
+#         self.deconv3 = nn.Sequential(
+#             nn.ConvTranspose3d(16, 1, 3, padding=1, output_padding=1, stride=(3,2,2), bias=False),
+#         )
 
-    def forward(self, encoder_out):
-        x = encoder_out
-        x_up1 = self.deconv1(x)
-        x_up2 = self.deconv2(x_up1)
-        x_up3 = self.deconv3(x_up2)
-        out = x_up3
-        return out
+#     def forward(self, encoder_out):
+#         x = encoder_out
+#         x_up1 = self.deconv1(x)
+#         x_up2 = self.deconv2(x_up1)
+#         x_up3 = self.deconv3(x_up2)
+#         out = x_up3
+#         return out
