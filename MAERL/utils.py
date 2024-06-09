@@ -158,11 +158,10 @@ class ReplayBuffer(Dataset):
         self.batch_size = batch_size
         self.device = device
         self.transform = transform
-        self.obs_dtype = np.float32
 
         self.obses_sensor = []
-        self.next_obses_sensor = []
         self.obses_robot = np.empty((capacity, 4), dtype=np.float32)
+        self.next_obses_sensor = []
         self.next_obses_robot = np.empty((capacity, 4), dtype=np.float32)
         self.actions = np.empty((capacity, *action_shape), dtype=np.float16)
         self.rewards = np.empty((capacity, 1), dtype=np.float16)
@@ -249,8 +248,40 @@ class ReplayBuffer(Dataset):
         next_obses_numpoints = torch.as_tensor(next_obses_numpoints, device=self.device)
         next_obses_robot = torch.as_tensor(self.next_obses_robot[idxs], device=self.device)
         not_dones = torch.as_tensor(self.not_dones[idxs], device=self.device)
-
         return obses_voxels, obses_coordinates, obses_numpoints, obses_robot, actions, rewards, next_obses_voxels, next_obses_coordinates, next_obses_numpoints, next_obses_robot, not_dones
+
+    def save(self, save_dir):
+        if self.idx == self.last_save:
+            return
+        path = os.path.join(save_dir, '%d_%d.pt' % (self.last_save, self.idx))
+        payload = [
+            self.obses_sensor[self.last_save:self.idx],
+            self.obses_robot[self.last_save:self.idx],
+            self.next_obses_sensor[self.last_save:self.idx],
+            self.next_obses_robot[self.last_save:self.idx],
+            self.actions[self.last_save:self.idx],
+            self.rewards[self.last_save:self.idx],
+            self.not_dones[self.last_save:self.idx]
+        ]
+        self.last_save = self.idx
+        torch.save(payload, path)
+
+    def load(self, save_dir):
+        chunks = os.listdir(save_dir)
+        chucks = sorted(chunks, key=lambda x: int(x.split('_')[0]))
+        for chunk in chucks:
+            start, end = [int(x) for x in chunk.split('.')[0].split('_')]
+            path = os.path.join(save_dir, chunk)
+            payload = torch.load(path)
+            assert self.idx == start
+            self.obses_sensor[start:end] = payload[0]
+            self.obses_robot[start:end] = payload[1]
+            self.next_obses_sensor[start:end] = payload[2]
+            self.next_obses_robot[start:end] = payload[3]
+            self.actions[start:end] = payload[4]
+            self.rewards[start:end] = payload[5]
+            self.not_dones[start:end] = payload[6]
+            self.idx = end
 
 
 class FrameStack(gym.Wrapper):

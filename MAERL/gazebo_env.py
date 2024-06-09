@@ -30,7 +30,7 @@ TIME_DELTA = 0.1
 class GazeboEnv:
     def __init__(self, launchfile):
         self.robot_state_shape = (4,)
-        self.action_space = gym.spaces.Box(low=np.array([0.0, -1.0]),
+        self.action_space = gym.spaces.Box(low=np.array([-1.0, -1.0]),
                                 high=np.array([1.0, 1.0]),
                                 dtype=np.float32)
         self._max_episode_steps = 800
@@ -77,9 +77,6 @@ class GazeboEnv:
         self.set_state_pub = rospy.Publisher(
             "gazebo/set_model_state", ModelState, queue_size=10
         )
-
-        #TMP
-        # self.vis2048 = rospy.Publisher("/vis_2048", PointCloud2, queue_size=10)
 
         self.unpause_srv = rospy.ServiceProxy("/gazebo/unpause_physics", Empty)
         self.pause_srv = rospy.ServiceProxy("/gazebo/pause_physics", Empty)
@@ -132,9 +129,18 @@ class GazeboEnv:
         reward = self.get_reward(target, collision, timeout, dist_curr, self.distance_history[0])
         done = collision or timeout or target
 
+        if collision:
+            done_reason = 'collision'
+        elif timeout:
+            done_reason = 'timeout'
+        elif target:
+            done_reason = 'target'
+        else:
+            done_reason = None
+
         robot_state = np.array([dist_curr, theta, action[0], action[1]], dtype=np.float32)
         self.episode_step+=1
-        return laser_state, robot_state, reward, done
+        return laser_state, robot_state, reward, done, done_reason
 
     def spawn_robot(self):
         start_x, start_y, start_yaw = self.map_manager.get_random_pos_on_map(safe_dist=0.43)

@@ -23,13 +23,14 @@ def parse_args():
     parser.add_argument('--replay_buffer_capacity', default=100000, type=int)
     # train
     parser.add_argument('--agent', default='mae_sac', type=str)
-    parser.add_argument('--init_steps', default=10, type=int)
+    parser.add_argument('--init_steps', default=10000, type=int)
     parser.add_argument('--num_train_steps', default=2000000, type=int)
     parser.add_argument('--batch_size', default=4, type=int)
+    parser.add_argument('--detach_encoder', default=False, action='store_true')
     parser.add_argument('--hidden_dim', default=1024, type=int)
     # eval
-    # parser.add_argument('--eval_freq', default=1000000, type=int)
-    # parser.add_argument('--num_eval_episodes', default=10, type=int)
+    parser.add_argument('--eval_freq', default=50000, type=int)
+    parser.add_argument('--num_eval_episodes', default=5, type=int)
     # critic
     parser.add_argument('--critic_lr', default=2e-4, type=float)
     parser.add_argument('--critic_beta', default=0.9, type=float)
@@ -44,8 +45,9 @@ def parse_args():
     # mlr
     parser.add_argument('--encoder_lr', default=1e-4, type=float)
     parser.add_argument('--encoder_tau', default=0.05, type=float)
+    parser.add_argument('--encoder_feature_dim', default=200, type=int)
+    parser.add_argument('--head_hidden_dim', default=400, type=int)
     parser.add_argument('--mask_ratio', default=0.8, type=float)
-    parser.add_argument('--head_hidden_dim', default=200, type=int)
     # sac
     parser.add_argument('--discount', default=0.99, type=float)
     parser.add_argument('--init_temperature', default=0.1, type=float)
@@ -54,33 +56,35 @@ def parse_args():
     # misc
     parser.add_argument('--seed', default=1, type=int)
     parser.add_argument('--work_dir', default='pytorch_models', type=str)
-    parser.add_argument('--save_tb', default=False, action='store_true')
+    parser.add_argument('--save_tb', default=True, action='store_true')
     parser.add_argument('--save_video', default=True, action='store_true')
-    parser.add_argument('--save_model', default=False, action='store_true')
-    parser.add_argument('--detach_encoder', default=False, action='store_true')
+    parser.add_argument('--save_buffer', default=False, action='store_true')
+    parser.add_argument('--save_model', default=True, action='store_true')
     parser.add_argument('--log_interval', default=50, type=int)
     args = parser.parse_args()
     return args
 
-def evaluate(env, agent, video, num_episodes, L, step, args):
+def evaluate(env, agent, data_processor, video, num_episodes, L, step, args):
     all_ep_rewards = []
 
     def run_eval_loop(sample_stochastically=True):
         start_time = time.time()
         prefix = 'stochastic_' if sample_stochastically else ''
         for i in range(num_episodes):
-            obs = env.reset()
+            obs_sensor, obs_robot = env.reset()
             video.init(enabled=(i == 0))
             video.record('%d' % step)
             done = False
             episode_reward = 0
             while not done:
                 with utils.eval_mode(agent):
+                    voxels, coordinates, numpoints = data_processor.forward(obs_sensor)
                     if sample_stochastically:
-                        action = agent.sample_action(obs)
+                        action = agent.sample_action(voxels, coordinates, numpoints, obs_robot)
                     else:
-                        action = agent.select_action(obs)
-                obs, reward, done, _ = env.step(action)
+                        action = agent.select_action(voxels, coordinates, numpoints, obs_robot)
+                a_in = [(action[0] + 1) / 2, action[1]]
+                obs_sensor, obs_robot, reward, done, done_reason = env.step(a_in)
                 episode_reward += reward
             video.save()
             L.log('eval/' + prefix + 'episode_reward', episode_reward, step)
@@ -114,6 +118,7 @@ def main():
     utils.make_dir(args.work_dir)
     video_dir = utils.make_dir(os.path.join(args.work_dir, 'video'))
     model_dir = utils.make_dir(os.path.join(args.work_dir, 'model'))
+    buffer_dir = utils.make_dir(os.path.join(args.work_dir, 'buffer'))
 
     # ROS bag recording
     video = VideoRecorder(video_dir if args.save_video else None)
@@ -147,6 +152,7 @@ def main():
             robot_state_shape=robot_state_shape,
             action_shape=action_shape,
             device=device,
+            hidden_dim=args.hidden_dim,
             discount=args.discount,
             init_temperature=args.init_temperature,
             alpha_lr=args.alpha_lr,
@@ -160,10 +166,11 @@ def main():
             critic_beta=args.critic_beta,
             critic_tau=args.critic_tau,
             critic_target_update_freq=args.critic_target_update_freq,
-            mask_ratio=args.mask_ratio,
             encoder_lr=args.encoder_lr,
             encoder_tau=args.encoder_tau,
-            hidden_dim=args.hidden_dim,
+            encoder_feature_dim=args.encoder_feature_dim,
+            head_hidden_dim=args.head_hidden_dim,
+            mask_ratio=args.mask_ratio,
             log_interval=args.log_interval,
             detach_encoder=args.detach_encoder,
         )
@@ -174,11 +181,13 @@ def main():
     start_time = time.time()
 
     for step in range(args.num_train_steps):
-        # if step % args.eval_freq == 0:
-        #     L.log('eval/episode', episode, step)
-        #     evaluate(env, agent, video, args.num_eval_episodes, L, step,args)
-        #     if args.save_model:
-        #         agent.save(model_dir, step)
+        if step % args.eval_freq == 0:
+            L.log('eval/episode', episode, step)
+            evaluate(env, agent, data_processor, video, args.num_eval_episodes, L, step, args)
+            if args.save_model:
+                agent.save(model_dir, step)
+            if args.save_buffer:
+                replay_buffer.save(buffer_dir)
 
         if done:
             if step > 0:
@@ -196,13 +205,12 @@ def main():
 
         # sample action for data collection
         if step < args.init_steps:
-            a_in = env.action_space.sample()
-            action = [2 * a_in[0] - 1, a_in[1]]
+            action = env.action_space.sample()
         else:
             with utils.eval_mode(agent):
                 voxels, coordinates, numpoints = data_processor.forward(obs_sensor)
                 action = agent.sample_action(voxels, coordinates, numpoints, obs_robot)
-                a_in = [(action[0] + 1) / 2, action[1]]
+        a_in = [(action[0] + 1) / 2, action[1]]
 
         # run training update
         if step >= args.init_steps:
@@ -210,7 +218,7 @@ def main():
             for _ in range(num_updates):
                 agent.update(replay_buffer, L, step)
         
-        next_obs_sensor, next_obs_robot, reward, done = env.step(a_in)
+        next_obs_sensor, next_obs_robot, reward, done, _ = env.step(a_in)
 
         episode_reward += reward
         replay_buffer.add(obs_sensor, obs_robot, action, reward, next_obs_sensor, next_obs_robot, done)

@@ -68,12 +68,12 @@ def weight_init(m):
 class Actor(nn.Module):
     """Actor network."""
     def __init__(
-        self, num_point_features, grid_size, batch_size, robot_state_shape, action_shape, hidden_dim, log_std_min, log_std_max
+        self, num_point_features, grid_size, encoder_feature_dim, batch_size, robot_state_shape, action_shape, hidden_dim, log_std_min, log_std_max
     ):
         super().__init__()
 
         self.vfe = MeanVFE()
-        self.encoder = LidarEncoder(num_point_features, grid_size, batch_size)
+        self.encoder = LidarEncoder(num_point_features, grid_size, encoder_feature_dim, batch_size)
 
         self.log_std_min = log_std_min
         self.log_std_max = log_std_max
@@ -146,11 +146,11 @@ class Actor(nn.Module):
 
 class QFunction(nn.Module):
     """MLP for q-function."""
-    def __init__(self, encoder_dim, robot_state_dim, action_dim, hidden_dim):
+    def __init__(self, encoder_feature_dim, robot_state_dim, action_dim, hidden_dim):
         super().__init__()
 
         self.trunk = nn.Sequential(
-            nn.Linear(encoder_dim + robot_state_dim + action_dim, hidden_dim), nn.ReLU(),
+            nn.Linear(encoder_feature_dim + robot_state_dim + action_dim, hidden_dim), nn.ReLU(),
             nn.Linear(hidden_dim, hidden_dim), nn.ReLU(),
             nn.Linear(hidden_dim, 1)
         )
@@ -164,12 +164,12 @@ class QFunction(nn.Module):
 class Critic(nn.Module):
     """Critic network."""
     def __init__(
-        self, num_point_features, grid_size, batch_size, robot_state_shape, action_shape, hidden_dim
+        self, num_point_features, grid_size, encoder_feature_dim, batch_size, robot_state_shape, action_shape, hidden_dim
     ):
         super().__init__()
 
         self.vfe = MeanVFE()
-        self.encoder = LidarEncoder(num_point_features, grid_size, batch_size)
+        self.encoder = LidarEncoder(num_point_features, grid_size, encoder_feature_dim, batch_size)
 
         self.Q1 = QFunction(
             self.encoder.feature_dim, robot_state_shape[0], action_shape[0], hidden_dim
@@ -303,8 +303,9 @@ class MAESacAgent(object):
         critic_target_update_freq=2,
         encoder_lr=1e-3,
         encoder_tau=0.05,
-        mask_ratio=0.8,
+        encoder_feature_dim=100,
         head_hidden_dim=200,
+        mask_ratio=0.8,
         mae_update_freq=1,
         log_interval=100,
         detach_encoder=False,
@@ -319,13 +320,13 @@ class MAESacAgent(object):
         self.log_interval = log_interval
         self.detach_encoder = detach_encoder
 
-        self.actor = Actor(num_point_features, grid_size, batch_size, robot_state_shape, action_shape, hidden_dim, actor_log_std_min, actor_log_std_max
+        self.actor = Actor(num_point_features, grid_size, encoder_feature_dim, batch_size, robot_state_shape, action_shape, hidden_dim, actor_log_std_min, actor_log_std_max
         ).to(device)
 
-        self.critic = Critic(num_point_features, grid_size, batch_size, robot_state_shape, action_shape, hidden_dim
+        self.critic = Critic(num_point_features, grid_size, encoder_feature_dim, batch_size, robot_state_shape, action_shape, hidden_dim
         ).to(device)
 
-        self.critic_target = Critic(num_point_features, grid_size, batch_size, robot_state_shape, action_shape, hidden_dim
+        self.critic_target = Critic(num_point_features, grid_size, encoder_feature_dim, batch_size, robot_state_shape, action_shape, hidden_dim
         ).to(device)
 
         self.critic_target.load_state_dict(self.critic.state_dict())
@@ -352,6 +353,7 @@ class MAESacAgent(object):
         )
 
         self.OccupancyMAE = OccupancyMAE(self.critic, mask_ratio, head_hidden_dim).to(self.device)
+        
         self.mae_optimizer = torch.optim.Adam(
             self.OccupancyMAE.parameters(), lr=encoder_lr
         )
@@ -369,11 +371,18 @@ class MAESacAgent(object):
     def alpha(self):
         return self.log_alpha.exp()
 
-    def select_action(self, obs):
+    def select_action(self, voxels, coordinates, numpoints, obs_robot):
         with torch.no_grad():
-            obs = torch.FloatTensor(obs).to(self.device)
-            obs = obs.unsqueeze(0)
-            mu, _, _, _ = self.actor(obs, compute_pi=False, compute_log_pi=False)
+            batch_index = np.full((coordinates.shape[0], 1), 0, dtype=np.int32)
+            batched_coordinates = np.concatenate((batch_index, coordinates), axis=1)
+
+            voxels_tsr = torch.as_tensor(voxels, device=self.device)
+            coordinates_tsr = torch.as_tensor(batched_coordinates, device=self.device)
+            numpoints_tsr = torch.as_tensor(numpoints, device=self.device)
+            obs_robot_tsr = torch.as_tensor(obs_robot, device=self.device)
+            obs_robot_tsr = obs_robot_tsr.unsqueeze(0)
+
+            mu, _, _, _ = self.actor(voxels_tsr, coordinates_tsr, numpoints_tsr, obs_robot_tsr, compute_pi=False, compute_log_pi=False, downstream=True)
             return mu.cpu().data.numpy().flatten()
 
     def sample_action(self, voxels, coordinates, numpoints, obs_robot):
@@ -481,25 +490,55 @@ class MAESacAgent(object):
         if step % self.mae_update_freq == 0:
             self.update_mae(voxels, coordinates, numpoints, L, step)
 
-    # def save(self, model_dir, step):
-    #     torch.save(
-    #         self.actor.state_dict(), '%s/actor_%s.pt' % (model_dir, step)
-    #     )
-    #     torch.save(
-    #         self.critic.state_dict(), '%s/critic_%s.pt' % (model_dir, step)
-    #     )
-    #     torch.save(
-    #         self.OccupancyMAE.decoder.state_dict(), '%s/decoder_%s.pt' % (model_dir, step)
-    #     )
+    def save(self, model_dir, step):
+        torch.save(
+            self.actor.state_dict(), '%s/actor_%s.pt' % (model_dir, step)
+        )
+        torch.save(
+            self.critic.state_dict(), '%s/critic_%s.pt' % (model_dir, step)
+        )
+        torch.save(
+            self.critic_target.state_dict(), '%s/critic_%s.pt' % (model_dir, step)
+        )
+        torch.save(
+            self.OccupancyMAE.state_dict(), '%s/mae_%s.pt' % (model_dir, step)
+        )
+        torch.save(
+            self.actor_optimizer.state_dict(), '%s/actor_adam_%s.pt' % (model_dir, step)
+        )
+        torch.save(
+            self.critic_optimizer.state_dict(), '%s/critic_adam_%s.pt' % (model_dir, step)
+        )
+        torch.save(
+            self.log_alpha_optimizer.state_dict(), '%s/log_alpha_adam_%s.pt' % (model_dir, step)
+        )
+        torch.save(
+            self.mae_optimizer.state_dict(), '%s/mae_adam_%s.pt' % (model_dir, step)
+        )
 
-    # def load(self, model_dir, step):
-    #     self.actor.load_state_dict(
-    #         torch.load('%s/actor_%s.pt' % (model_dir, step))
-    #     )
-    #     self.critic.load_state_dict(
-    #         torch.load('%s/critic_%s.pt' % (model_dir, step))
-    #     )
-    #     self.OccupancyMAE.decoder.load_state_dict(
-    #         torch.load('%s/decoder_%s.pt' % (model_dir, step))
-    #     )
+    def load(self, model_dir, step):
+        self.actor.load_state_dict(
+            torch.load('%s/actor_%s.pt' % (model_dir, step))
+        )
+        self.critic.load_state_dict(
+            torch.load('%s/critic_%s.pt' % (model_dir, step))
+        )
+        self.critic_target.load_state_dict(
+            torch.load('%s/critic_%s.pt' % (model_dir, step))
+        )
+        self.OccupancyMAE.load_state_dict(
+            torch.load('%s/mae_%s.pt' % (model_dir, step))
+        )
+        self.actor_optimizer.state_dict(
+            torch.load('%s/actor_adam_%s.pt' % (model_dir, step))
+        )
+        self.critic_optimizer.state_dict(
+            torch.load('%s/critic_adam_%s.pt' % (model_dir, step))
+        )
+        self.log_alpha_optimizer.state_dict(
+            torch.load('%s/log_alpha_adam_%s.pt' % (model_dir, step))
+        )
+        self.mae_optimizer.state_dict(
+            torch.load('%s/mae_adam_%s.pt' % (model_dir, step))
+        )
  

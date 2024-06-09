@@ -49,11 +49,11 @@ def post_act_block(in_channels, out_channels, kernel_size, indice_key=None, stri
 
 
 class LidarEncoder(nn.Module):
-    def __init__(self, num_point_features, grid_size, batch_size):
+    def __init__(self, num_point_features, grid_size, encoder_feature_dim, batch_size):
         super().__init__()
         self.sparse_shape = grid_size[::-1] + [1, 0, 0]
         self.batch_size = batch_size
-        self.feature_dim = 100
+        self.feature_dim = encoder_feature_dim
 
         norm_fn = partial(nn.BatchNorm1d, eps=1e-3, momentum=0.01)
 
@@ -137,21 +137,6 @@ class LidarEncoder(nn.Module):
         tie_weights(src=source.conv_out, trg=self.conv_out)
         tie_weights(src=source.fc, trg=self.fc)
         tie_weights(src=source.ln, trg=self.ln)
-        
-
-    # def log(self, L, step, log_freq):
-    #     if step % log_freq != 0:
-    #         return
-
-    #     for k, v in self.outputs.items():
-    #         L.log_histogram('train_encoder/%s_hist' % k, v, step)
-    #         if len(v.shape) > 2:
-    #             L.log_image('train_encoder/%s_img' % k, v[0], step)
-
-    #     for i in range(self.num_layers):
-    #         L.log_param('train_encoder/conv%s' % (i + 1), self.convs[i], step)
-    #     L.log_param('train_encoder/fc', self.fc, step)
-    #     L.log_param('train_encoder/ln', self.ln, step)
 
 
 # class LidarDecoder(nn.Module):
