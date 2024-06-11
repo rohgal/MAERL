@@ -5,6 +5,8 @@ import os
 import time
 import json
 import utils
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 from logger import Logger
 from video import VideoRecorder
@@ -45,8 +47,8 @@ def parse_args():
     # mlr
     parser.add_argument('--encoder_lr', default=1e-4, type=float)
     parser.add_argument('--encoder_tau', default=0.05, type=float)
-    parser.add_argument('--encoder_feature_dim', default=200, type=int)
-    parser.add_argument('--head_hidden_dim', default=400, type=int)
+    parser.add_argument('--encoder_feature_dim', default=100, type=int)
+    parser.add_argument('--head_hidden_dim', default=200, type=int)
     parser.add_argument('--mask_ratio', default=0.8, type=float)
     # sac
     parser.add_argument('--discount', default=0.99, type=float)

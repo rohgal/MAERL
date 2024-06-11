@@ -32,7 +32,7 @@ class VideoRecorder(object):
     def record(self, file_name):
         if self.enabled:
             record_command = ['rosbag', 'record', '-O', os.path.join(self.dir_name, file_name)] + self.topics_to_record
-            self.process = subprocess.Popen(record_command)
+            self.process = subprocess.Popen(record_command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     def save(self):
         if self.enabled:
