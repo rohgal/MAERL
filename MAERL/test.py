@@ -2,23 +2,27 @@ import numpy as np
 import torch
 import argparse
 import os
+import json
 import time
 import utils
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 from logger import Logger
-from video import VideoRecorder
+from video_recorder import VideoRecorder
 from mae_sac import Actor
 from gazebo_env import GazeboEnv
 
+
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--num_eval_episodes', default=100, type=int)
+    parser.add_argument('--num_eval_episodes', default=10, type=int)
     parser.add_argument('--seed', default=7, type=int)
-    parser.add_argument('--saved_model_dir', default='eval', type=str)
-    parser.add_argument('--stepgrade', default=500000, type=int)
-    parser.add_argument('--work_dir', default='eval', type=str)
-    parser.add_argument('--exp_name', default='eval', type=str)
-    parser.add_argument('--save_video', default=True, action='store_true')
+    parser.add_argument('--work_dir', default='pytorch_models', type=str)
+    parser.add_argument('--model_name', default='success_100', type=str)
+    parser.add_argument('--stepgrade', default=600000, type=int)
+    parser.add_argument('--result_dir', default='eval_results', type=str)
+    parser.add_argument('--exp_name', default='success_100_600k', type=str)
     args = parser.parse_args()
     return args
 
@@ -29,7 +33,7 @@ def evaluate(env, agent, data_processor, video, num_episodes):
         prefix = 'stochastic_' if sample_stochastically else ''
         success, collision, timeout = 0, 0, 0
         for i in range(num_episodes):
-            obs_sensor, obs_robot = env.reset()
+            obs_sensor, obs_robot = env.reset(evaluation=True)
             step_taken = 0
             done = False
             done_reason = None
@@ -48,26 +52,29 @@ def evaluate(env, agent, data_processor, video, num_episodes):
                 step_taken += 1
                 episode_reward += reward
             video.save()
-            if done_reason = 'target':
+            if done_reason == 'target':
                 success += 1
-            elif done_reason = 'collision':
+            elif done_reason == 'collision':
                 collision += 1
-            elif done_reason = 'timeout':
+            elif done_reason == 'timeout':
                 timeout += 1
-            print(f"| ER: {episode_reward} | DR: {done_reason} | SC: {success} | CL: {collision} | TO: {timeout}")
+            print(f"ER: {episode_reward} | DR: {done_reason} | SC: {success} | CL: {collision} | TO: {timeout}")
         print("Evaluation Over")
     run_eval_loop(sample_stochastically=False)
 
 
 class TestAgent(object):
     def __init__(
-        self, num_point_features, grid_size, encoder_feature_dim, batch_size, robot_state_shape, action_shape, hidden_dim, log_std_min, log_std_max
+        self, num_point_features, grid_size, encoder_feature_dim, batch_size, robot_state_shape, action_shape, hidden_dim, log_std_min, log_std_max, device
     ):
-        self.actor = Actor(num_point_features, grid_size, encoder_feature_dim, batch_size, robot_state_shape, action_shape, hidden_dim, log_std_min, log_std_max)
+        self.device = device
+        self.actor = Actor(num_point_features, grid_size, encoder_feature_dim, batch_size, robot_state_shape, action_shape, hidden_dim, log_std_min, log_std_max
+        ).to(device)
+        self.train()
 
-    def load(self, saved_model_dir, step):
+    def load(self, work_dir, model_name, step):
         self.actor.load_state_dict(
-            torch.load('pytorch_models/%s/model/actor_%s.pt' % (saved_model_dir, step))
+            torch.load('%s/%s/model/actor_%s.pt' % (work_dir, model_name, step))
         )
 
     def select_action(self, voxels, coordinates, numpoints, obs_robot):
@@ -98,6 +105,10 @@ class TestAgent(object):
             mu, pi, _, _ = self.actor(voxels_tsr, coordinates_tsr, numpoints_tsr, obs_robot_tsr, compute_log_pi=False, downstream=True)
             return pi.cpu().data.numpy().flatten()
 
+    def train(self, training=True):
+        self.training = training
+        self.actor.train(training)
+
 
 def main():
     args = parse_args()
@@ -110,14 +121,17 @@ def main():
     time.sleep(3)
     
     # make directory
-    args.work_dir = args.work_dir + '/'  + args.exp_name
-    utils.make_dir(args.work_dir)
-    video_dir = utils.make_dir(os.path.join(args.work_dir, 'video'))
+    args.result_dir = args.result_dir + '/'  + args.exp_name
+    utils.make_dir(args.result_dir)
+    video_dir = utils.make_dir(os.path.join(args.result_dir, 'video'))
+
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     # ROS bag recording
     video = VideoRecorder(video_dir)
 
-    with open(os.path.join(args.saved_model_dir, 'args.json'), 'r') as f:
+    # load config
+    with open(os.path.join(args.work_dir, args.model_name, 'args.json'), 'r') as f:
         parameters = json.load(f)
     num_point_features = parameters.get('num_point_features', 0)
     point_cloud_range = parameters.get('point_cloud_range', '')
@@ -131,9 +145,10 @@ def main():
     
     action_shape = env.action_space.shape
     robot_state_shape = env.robot_state_shape
-    grid_size = np.round((np.array(args.point_cloud_range)[3:6] - np.array(args.point_cloud_range)[0:3]) / np.array(args.voxel_size)).astype(np.int64)
-    data_processor = utils.DataProcessor(args.point_cloud_range, args.num_point_features, args.voxel_size, args.max_num_points_per_voxel, args.max_num_voxels)
+    grid_size = np.round((np.array(point_cloud_range)[3:6] - np.array(point_cloud_range)[0:3]) / np.array(voxel_size)).astype(np.int64)
+    data_processor = utils.DataProcessor(point_cloud_range, num_point_features, voxel_size, max_num_points_per_voxel, max_num_voxels)
     
+    # load agent
     agent = TestAgent(
         num_point_features=num_point_features,
         grid_size=grid_size,
@@ -144,13 +159,14 @@ def main():
         hidden_dim=hidden_dim,
         log_std_min=actor_log_std_min,
         log_std_max=actor_log_std_max,
+        device=device,
         )
-    agent.load(args.saved_model_dir, args.stepgrade)
+    agent.load(args.work_dir, args.model_name, args.stepgrade)
 
     evaluate(env, agent, data_processor, video, args.num_eval_episodes)
-
 
 
 if __name__ == '__main__':
     torch.multiprocessing.set_start_method('spawn')
     main()
+    os.system('killall -9 rosout roslaunch rosmaster gzserver nodelet robot_state_publisher gzclient rviz python python3')

@@ -1,0 +1,13 @@
+<launch>
+  <!-- Load the URDF into the ROS Parameter Server -->
+  <param name="robot_description" command="$(find xacro)/xacro '$(find multi_robot_scenario)/xacro/p3dx/pioneer3dx.xacro'" />
+
+  <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher">
+    <param name="publish_frequency" type="double" value="30.0"/>
+  </node>
+  
+  <node pkg="joint_state_publisher" type="joint_state_publisher" name="joint_state_publisher">
+    <param name="publish_frequency" type="double" value="30.0"/>
+  </node>
+
+</launch>

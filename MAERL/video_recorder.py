@@ -8,9 +8,10 @@ class VideoRecorder(object):
         self.dir_name = dir_name
 
         rviz_file = os.path.join(rospkg.RosPack().get_path("multi_robot_scenario"), "launch/pioneer3dx.rviz")
-        marker_topics = []
         topics = []
-        tf_topics = ['/tf', '/tf_static']
+        image_topics =['/r1/front_camera/camera_info']
+        marker_topics = []
+        tf_topics = ['/tf', '/tf_static', '/r1/joint_states']
 
         with open(rviz_file, 'r') as file:
             config_data = yaml.safe_load(file)
@@ -18,13 +19,16 @@ class VideoRecorder(object):
 
         for display in displays:
             topic = display.get('Topic', '')
+            image_topic = display.get('Image Topic', '')
             marker_topic = display.get('Marker Topic', '')
             if topic:
                 topics.append(topic)
+            if image_topic:
+                image_topics.append(image_topic)
             if marker_topic:
                 marker_topics.append(marker_topic)
 
-        self.topics_to_record = marker_topics + topics + tf_topics
+        self.topics_to_record =  topics + image_topics + marker_topics + tf_topics
 
     def init(self, enabled=True):
         self.enabled = self.dir_name is not None and enabled

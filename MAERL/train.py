@@ -2,16 +2,17 @@ import numpy as np
 import torch
 import argparse
 import os
-import time
 import json
+import time
 import utils
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 from logger import Logger
-from video import VideoRecorder
+from video_recorder import VideoRecorder
 from mae_sac import MAESacAgent
 from gazebo_env import GazeboEnv
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -30,9 +31,6 @@ def parse_args():
     parser.add_argument('--batch_size', default=4, type=int)
     parser.add_argument('--detach_encoder', default=False, action='store_true')
     parser.add_argument('--hidden_dim', default=1024, type=int)
-    # eval
-    parser.add_argument('--eval_freq', default=50000, type=int)
-    parser.add_argument('--num_eval_episodes', default=5, type=int)
     # critic
     parser.add_argument('--critic_lr', default=2e-4, type=float)
     parser.add_argument('--critic_beta', default=0.9, type=float)
@@ -56,24 +54,26 @@ def parse_args():
     parser.add_argument('--alpha_lr', default=1e-5, type=float)
     parser.add_argument('--alpha_beta', default=0.5, type=float)
     # misc
+    parser.add_argument('--save_model', default=True, action='store_true')
+    parser.add_argument('--model_save_freq', default=50000, type=int)
+    parser.add_argument('--save_buffer', default=False, action='store_true')
+    parser.add_argument('--do_eval', default=True, action='store_true')
+    parser.add_argument('--num_eval_episodes', default=5, type=int)
+    parser.add_argument('--save_tb', default=True, action='store_true')
+    parser.add_argument('--log_interval', default=50, type=int)
     parser.add_argument('--seed', default=1, type=int)
     parser.add_argument('--work_dir', default='pytorch_models', type=str)
-    parser.add_argument('--save_tb', default=True, action='store_true')
-    parser.add_argument('--save_video', default=True, action='store_true')
-    parser.add_argument('--save_buffer', default=False, action='store_true')
-    parser.add_argument('--save_model', default=True, action='store_true')
-    parser.add_argument('--log_interval', default=50, type=int)
     args = parser.parse_args()
     return args
+
 
 def evaluate(env, agent, data_processor, video, num_episodes, L, step, args):
     all_ep_rewards = []
 
     def run_eval_loop(sample_stochastically=True):
-        start_time = time.time()
         prefix = 'stochastic_' if sample_stochastically else ''
         for i in range(num_episodes):
-            obs_sensor, obs_robot = env.reset()
+            obs_sensor, obs_robot = env.reset(evaluation=True)
             video.init(enabled=(i == 0))
             video.record('%d' % step)
             done = False
@@ -89,10 +89,7 @@ def evaluate(env, agent, data_processor, video, num_episodes, L, step, args):
                 obs_sensor, obs_robot, reward, done, done_reason = env.step(a_in)
                 episode_reward += reward
             video.save()
-            L.log('eval/' + prefix + 'episode_reward', episode_reward, step)
             all_ep_rewards.append(episode_reward)
-        
-        L.log('eval/' + prefix + 'eval_time', time.time()-start_time , step)
         mean_ep_reward = np.mean(all_ep_rewards)
         best_ep_reward = np.max(all_ep_rewards)
         L.log('eval/' + prefix + 'mean_episode_reward', mean_ep_reward, step)
@@ -100,6 +97,7 @@ def evaluate(env, agent, data_processor, video, num_episodes, L, step, args):
 
     run_eval_loop(sample_stochastically=False)
     L.dump(step)
+
 
 def main():
     args = parse_args()
@@ -118,13 +116,14 @@ def main():
     + str(args.batch_size) + '-s' + str(args.seed)
     args.work_dir = args.work_dir + '/'  + exp_name
     utils.make_dir(args.work_dir)
-    video_dir = utils.make_dir(os.path.join(args.work_dir, 'video'))
-    model_dir = utils.make_dir(os.path.join(args.work_dir, 'model'))
-    buffer_dir = utils.make_dir(os.path.join(args.work_dir, 'buffer'))
-
-    # ROS bag recording
-    video = VideoRecorder(video_dir if args.save_video else None)
-
+    if args.save_model:
+        model_dir = utils.make_dir(os.path.join(args.work_dir, 'model'))
+    if args.save_buffer:
+        buffer_dir = utils.make_dir(os.path.join(args.work_dir, 'buffer'))
+    if args.do_eval:
+        video_dir = utils.make_dir(os.path.join(args.work_dir, 'video'))
+        video = VideoRecorder(video_dir)
+    
     # save args
     with open(os.path.join(args.work_dir, 'args.json'), 'w') as f:
         json.dump(vars(args), f, sort_keys=True, indent=4)
@@ -183,9 +182,10 @@ def main():
     start_time = time.time()
 
     for step in range(args.num_train_steps):
-        if step % args.eval_freq == 0:
-            L.log('eval/episode', episode, step)
-            evaluate(env, agent, data_processor, video, args.num_eval_episodes, L, step, args)
+        if step % args.model_save_freq == 0:
+            if args.do_eval:
+                L.log('eval/episode', episode, step)
+                evaluate(env, agent, data_processor, video, args.num_eval_episodes, L, step, args)
             if args.save_model:
                 agent.save(model_dir, step)
             if args.save_buffer:
@@ -228,8 +228,9 @@ def main():
         obs_sensor = next_obs_sensor
         obs_robot = next_obs_robot
         episode_step += 1
-
+    
 
 if __name__ == '__main__':
     torch.multiprocessing.set_start_method('spawn')
     main()
+    os.system('killall -9 rosout roslaunch rosmaster gzserver nodelet robot_state_publisher gzclient rviz python python3')

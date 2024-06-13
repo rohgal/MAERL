@@ -2,17 +2,16 @@ import math
 import os
 import subprocess
 import time
-from collections import deque
-from os import path
 import numpy as np
 import rospy
-from sensor_msgs.msg import PointCloud2
 import sensor_msgs.point_cloud2 as pc2
 import gym
 import torch
 
+from collections import deque
+from os import path
 from map_manager import MapManager
-
+from sensor_msgs.msg import PointCloud2
 from map_distance_server.srv import GetDistanceMap
 from gazebo_msgs.msg import ModelState
 from geometry_msgs.msg import Twist
@@ -99,20 +98,35 @@ class GazeboEnv:
             "/r1/odom", Odometry, self.odom_callback, queue_size=1
         )
 
-    def reset(self):
-        self.episode_step = 0
-        self.pub_action([0.0, 0.0])
-        self.reset_sim()
-        self.spawn_robot()
-        self.set_goal(min_distance=0.43)
-        self.propagate_sim()
+    def reset(self, evaluation=False):
+        if evaluation:
+            self.episode_step = 0
+            self.pub_action([0.0, 0.0])
+            self.reset_sim()
+            self.spawn_robot()
+            self.set_goal(min_distance=3.0, safe_dist=0.4)
+            self.propagate_sim()
 
-        laser_state = self.get_laser_obs()
-        theta, distance = self.calculate_polar_goal(self.robot_x, self.robot_y, self.goal_x, self.goal_y, self.robot_yaw)
-        self.distance_history.extend([distance] * 4)
+            laser_state = self.get_laser_obs()
+            theta, distance = self.calculate_polar_goal(self.robot_x, self.robot_y, self.goal_x, self.goal_y, self.robot_yaw)
+            self.distance_history.extend([distance] * 4)
 
-        robot_state = np.array([distance, theta, 0.0, 0.0], dtype=np.float32)
-        return laser_state, robot_state
+            robot_state = np.array([distance, theta, 0.0, 0.0], dtype=np.float32)
+            return laser_state, robot_state
+        else:
+            self.episode_step = 0
+            self.pub_action([0.0, 0.0])
+            self.reset_sim()
+            self.spawn_robot()
+            self.set_goal(min_distance=0.43, safe_dist=0.5)
+            self.propagate_sim()
+
+            laser_state = self.get_laser_obs()
+            theta, distance = self.calculate_polar_goal(self.robot_x, self.robot_y, self.goal_x, self.goal_y, self.robot_yaw)
+            self.distance_history.extend([distance] * 4)
+
+            robot_state = np.array([distance, theta, 0.0, 0.0], dtype=np.float32)
+            return laser_state, robot_state
 
     def step(self, action):
         self.pub_action(action)
@@ -160,9 +174,9 @@ class GazeboEnv:
         self.robot_y = object_state.pose.position.y
         self.robot_yaw = start_yaw
 
-    def set_goal(self, min_distance):
+    def set_goal(self, min_distance, safe_dist):
         while True:
-            x, y, yaw = self.map_manager.get_random_pos_on_map(safe_dist=0.5)
+            x, y, yaw = self.map_manager.get_random_pos_on_map(safe_dist)
             distance = math.sqrt((self.robot_x - x) ** 2 + (self.robot_y - y) ** 2)
         
             if distance >= min_distance:
@@ -220,8 +234,8 @@ class GazeboEnv:
         marker.header.frame_id = "odom"
         marker.type = marker.CYLINDER
         marker.action = marker.ADD
-        marker.scale.x = 0.1
-        marker.scale.y = 0.1
+        marker.scale.x = 0.15
+        marker.scale.y = 0.15
         marker.scale.z = 0.01
         marker.color.a = 1.0
         marker.color.r = 1.0
@@ -310,29 +324,15 @@ class GazeboEnv:
     def calculate_polar_goal(odom_x, odom_y, goal_x, goal_y, angle):
         skew_x = goal_x - odom_x
         skew_y = goal_y - odom_y
-        dot = skew_x * 1 + skew_y * 0
-        mag1 = math.sqrt(math.pow(skew_x, 2) + math.pow(skew_y, 2))
-        mag2 = math.sqrt(math.pow(1, 2) + math.pow(0, 2))
-        beta = math.acos(dot / (mag1 * mag2))
-
-        if skew_y < 0:
-            if skew_x < 0:
-                beta = -beta
-            else:
-                beta = 0 - beta
-
+        beta = math.atan2(skew_y, skew_x)
         theta = beta - angle
 
         if theta > np.pi:
-            theta = np.pi - theta
-            theta = -np.pi - theta
+            theta -= 2 * np.pi
         if theta < -np.pi:
-            theta = -np.pi - theta
-            theta = np.pi - theta
+            theta += 2 * np.pi
 
-        distance = np.linalg.norm(
-            [odom_x - goal_x, odom_y - goal_y]
-        )
+        distance = np.linalg.norm([skew_x, skew_y])
         return np.float32(theta), np.float32(distance)
 
     @staticmethod
