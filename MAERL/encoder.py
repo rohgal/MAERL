@@ -16,7 +16,7 @@ def tie_weights(src, trg):
         trg.bias = src.bias
     elif any(isinstance(layer, spconv.SparseSequential) for layer in src._modules.values()):
         for i in range(len(src)):
-            iter_num = len(src) - int(any(isinstance(layer, nn.ReLU) for layer in src[i]._modules.values()))
+            iter_num = len(src[i]) - int(any(isinstance(layer, nn.ReLU) for layer in src[i]._modules.values()))
             for j in range(iter_num):
                 trg[i][j].weight = src[i][j].weight
                 trg[i][j].bias = src[i][j].bias

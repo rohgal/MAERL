@@ -307,6 +307,7 @@ class MAESacAgent(object):
         head_hidden_dim=200,
         mask_ratio=0.8,
         mae_update_freq=1,
+        mae_cutoff_step=50000,
         log_interval=100,
         detach_encoder=False,
     ):
@@ -319,6 +320,7 @@ class MAESacAgent(object):
         self.mae_update_freq = mae_update_freq
         self.log_interval = log_interval
         self.detach_encoder = detach_encoder
+        self.mae_cutoff_step = mae_cutoff_step
 
         self.actor = Actor(num_point_features, grid_size, encoder_feature_dim, batch_size, robot_state_shape, action_shape, hidden_dim, actor_log_std_min, actor_log_std_max
         ).to(device)
@@ -332,7 +334,7 @@ class MAESacAgent(object):
         self.critic_target.load_state_dict(self.critic.state_dict())
 
         # tie encoders between actor and critic
-        self.actor.encoder.copy_conv_weights_from(self.critic.encoder)
+        # self.actor.encoder.copy_conv_weights_from(self.critic.encoder)
 
         self.log_alpha = torch.tensor(np.log(init_temperature)).to(device)
         self.log_alpha.requires_grad = True
@@ -422,8 +424,8 @@ class MAESacAgent(object):
 
     def update_actor_and_alpha(self, voxels, coordinates, numpoints, robots, L, step):
         # detach encoder, so we don't update it with the actor loss
-        _, pi, log_pi, log_std = self.actor(voxels, coordinates, numpoints, robots, detach_encoder=True)
-        actor_Q1, actor_Q2 = self.critic(voxels, coordinates, numpoints, robots, pi, detach_encoder=True)
+        _, pi, log_pi, log_std = self.actor(voxels, coordinates, numpoints, robots, detach_encoder=False)
+        actor_Q1, actor_Q2 = self.critic(voxels, coordinates, numpoints, robots, pi, detach_encoder=False)
 
         actor_Q = torch.min(actor_Q1, actor_Q2)
         actor_loss = (self.alpha.detach() * log_pi - actor_Q).mean()
@@ -486,35 +488,35 @@ class MAESacAgent(object):
                                 self.encoder_tau)
             soft_update_params(self.OccupancyMAE.global_classifier, self.OccupancyMAE.global_target_classifier,
                                 self.encoder_tau)
-        
-        if step % self.mae_update_freq == 0:
+
+        if step < self.mae_cutoff_step and step % self.mae_update_freq == 0:
             self.update_mae(voxels, coordinates, numpoints, L, step)
 
     def save(self, model_dir, step):
         torch.save(
             self.actor.state_dict(), '%s/actor_%s.pt' % (model_dir, step)
         )
-        torch.save(
-            self.critic.state_dict(), '%s/critic_%s.pt' % (model_dir, step)
-        )
-        torch.save(
-            self.critic_target.state_dict(), '%s/critic_%s.pt' % (model_dir, step)
-        )
-        torch.save(
-            self.OccupancyMAE.state_dict(), '%s/mae_%s.pt' % (model_dir, step)
-        )
-        torch.save(
-            self.actor_optimizer.state_dict(), '%s/actor_adam_%s.pt' % (model_dir, step)
-        )
-        torch.save(
-            self.critic_optimizer.state_dict(), '%s/critic_adam_%s.pt' % (model_dir, step)
-        )
-        torch.save(
-            self.log_alpha_optimizer.state_dict(), '%s/log_alpha_adam_%s.pt' % (model_dir, step)
-        )
-        torch.save(
-            self.mae_optimizer.state_dict(), '%s/mae_adam_%s.pt' % (model_dir, step)
-        )
+        # torch.save(
+        #     self.critic.state_dict(), '%s/critic_%s.pt' % (model_dir, step)
+        # )
+        # torch.save(
+        #     self.critic_target.state_dict(), '%s/critic_%s.pt' % (model_dir, step)
+        # )
+        # torch.save(
+        #     self.OccupancyMAE.state_dict(), '%s/mae_%s.pt' % (model_dir, step)
+        # )
+        # torch.save(
+        #     self.actor_optimizer.state_dict(), '%s/actor_adam_%s.pt' % (model_dir, step)
+        # )
+        # torch.save(
+        #     self.critic_optimizer.state_dict(), '%s/critic_adam_%s.pt' % (model_dir, step)
+        # )
+        # torch.save(
+        #     self.log_alpha_optimizer.state_dict(), '%s/log_alpha_adam_%s.pt' % (model_dir, step)
+        # )
+        # torch.save(
+        #     self.mae_optimizer.state_dict(), '%s/mae_adam_%s.pt' % (model_dir, step)
+        # )
 
     def load(self, model_dir, step):
         self.actor.load_state_dict(

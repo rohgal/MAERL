@@ -27,7 +27,7 @@ def parse_args():
     # train
     parser.add_argument('--agent', default='mae_sac', type=str)
     parser.add_argument('--init_steps', default=10000, type=int)
-    parser.add_argument('--num_train_steps', default=2000000, type=int)
+    parser.add_argument('--num_train_steps', default=1000000, type=int)
     parser.add_argument('--batch_size', default=4, type=int)
     parser.add_argument('--detach_encoder', default=False, action='store_true')
     parser.add_argument('--hidden_dim', default=1024, type=int)
@@ -44,10 +44,11 @@ def parse_args():
     parser.add_argument('--actor_update_freq', default=2, type=int)
     # mlr
     parser.add_argument('--encoder_lr', default=1e-4, type=float)
-    parser.add_argument('--encoder_tau', default=0.05, type=float)
-    parser.add_argument('--encoder_feature_dim', default=100, type=int)
+    parser.add_argument('--encoder_tau', default=0.01, type=float)
+    parser.add_argument('--encoder_feature_dim', default=75, type=int)
     parser.add_argument('--head_hidden_dim', default=200, type=int)
     parser.add_argument('--mask_ratio', default=0.8, type=float)
+    parser.add_argument('--mae_cutoff_step', default=50000, type=int)
     # sac
     parser.add_argument('--discount', default=0.99, type=float)
     parser.add_argument('--init_temperature', default=0.1, type=float)
@@ -55,9 +56,9 @@ def parse_args():
     parser.add_argument('--alpha_beta', default=0.5, type=float)
     # misc
     parser.add_argument('--save_model', default=True, action='store_true')
-    parser.add_argument('--model_save_freq', default=50000, type=int)
+    parser.add_argument('--model_save_freq', default=100000, type=int)
     parser.add_argument('--save_buffer', default=False, action='store_true')
-    parser.add_argument('--do_eval', default=True, action='store_true')
+    parser.add_argument('--do_eval', default=False, action='store_true')
     parser.add_argument('--num_eval_episodes', default=5, type=int)
     parser.add_argument('--save_tb', default=True, action='store_true')
     parser.add_argument('--log_interval', default=50, type=int)
@@ -172,6 +173,7 @@ def main():
             encoder_feature_dim=args.encoder_feature_dim,
             head_hidden_dim=args.head_hidden_dim,
             mask_ratio=args.mask_ratio,
+            mae_cutoff_step=args.mae_cutoff_step,
             log_interval=args.log_interval,
             detach_encoder=args.detach_encoder,
         )
