@@ -32,23 +32,25 @@ def parse_args():
     parser.add_argument('--detach_encoder', default=False, action='store_true')
     parser.add_argument('--hidden_dim', default=1024, type=int)
     # critic
-    parser.add_argument('--critic_lr', default=2e-4, type=float)
+    parser.add_argument('--critic_lr', default=1e-4, type=float)
     parser.add_argument('--critic_beta', default=0.9, type=float)
     parser.add_argument('--critic_tau', default=0.01, type=float)
+    parser.add_argument('--critic_encoder_tau', default=0.05, type=float)
     parser.add_argument('--critic_target_update_freq', default=2, type=int) # try to change it to 1 and retain 0.01 above
     # actor
-    parser.add_argument('--actor_lr', default=2e-4, type=float)
+    parser.add_argument('--actor_lr', default=1e-4, type=float)
     parser.add_argument('--actor_beta', default=0.9, type=float)
     parser.add_argument('--actor_log_std_min', default=-10, type=float)
     parser.add_argument('--actor_log_std_max', default=2, type=float)
     parser.add_argument('--actor_update_freq', default=2, type=int)
     # mlr
     parser.add_argument('--encoder_lr', default=1e-4, type=float)
-    parser.add_argument('--encoder_tau', default=0.01, type=float)
+    parser.add_argument('--encoder_tau', default=0.05, type=float)
     parser.add_argument('--encoder_feature_dim', default=75, type=int)
+    parser.add_argument('--encoder_target_update_freq', default=2, type=int)
     parser.add_argument('--head_hidden_dim', default=200, type=int)
     parser.add_argument('--mask_ratio', default=0.8, type=float)
-    parser.add_argument('--mae_cutoff_step', default=50000, type=int)
+    parser.add_argument('--mae_cutoff_step', default=600000, type=int)
     # sac
     parser.add_argument('--discount', default=0.99, type=float)
     parser.add_argument('--init_temperature', default=0.1, type=float)
@@ -56,7 +58,7 @@ def parse_args():
     parser.add_argument('--alpha_beta', default=0.5, type=float)
     # misc
     parser.add_argument('--save_model', default=True, action='store_true')
-    parser.add_argument('--model_save_freq', default=100000, type=int)
+    parser.add_argument('--model_save_freq', default=50000, type=int)
     parser.add_argument('--save_buffer', default=False, action='store_true')
     parser.add_argument('--do_eval', default=False, action='store_true')
     parser.add_argument('--num_eval_episodes', default=5, type=int)
@@ -167,10 +169,12 @@ def main():
             critic_lr=args.critic_lr,
             critic_beta=args.critic_beta,
             critic_tau=args.critic_tau,
+            critic_encoder_tau=args.critic_encoder_tau,
             critic_target_update_freq=args.critic_target_update_freq,
             encoder_lr=args.encoder_lr,
             encoder_tau=args.encoder_tau,
             encoder_feature_dim=args.encoder_feature_dim,
+            encoder_target_update_freq=args.encoder_target_update_freq,
             head_hidden_dim=args.head_hidden_dim,
             mask_ratio=args.mask_ratio,
             mae_cutoff_step=args.mae_cutoff_step,
@@ -198,7 +202,8 @@ def main():
                 L.log('train/duration', time.time() - start_time, step)
                 L.dump(step)
                 start_time = time.time()
-            L.log('train/episode_reward', episode_reward, step)
+            if step >= args.init_steps:
+                L.log('train/episode_reward', episode_reward, step)
 
             obs_sensor, obs_robot = env.reset()
             done = False
@@ -210,6 +215,8 @@ def main():
         # sample action for data collection
         if step < args.init_steps:
             action = env.action_space.sample()
+            if step > args.batch_size:
+                agent.update(replay_buffer, L, step, only_mae=True)
         else:
             with utils.eval_mode(agent):
                 voxels, coordinates, numpoints = data_processor.forward(obs_sensor)

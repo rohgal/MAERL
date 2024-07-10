@@ -16,22 +16,23 @@ from gazebo_env import GazeboEnv
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--num_eval_episodes', default=10, type=int)
+    parser.add_argument('--num_eval_episodes', default=20, type=int)
     parser.add_argument('--seed', default=7, type=int)
     parser.add_argument('--work_dir', default='pytorch_models', type=str)
-    parser.add_argument('--model_name', default='success_100', type=str)
-    parser.add_argument('--stepgrade', default=600000, type=int)
+    parser.add_argument('--model_name', default='MAERL-07-07-19-26-08-b4-s1', type=str)
+    parser.add_argument('--stepgrade', default=100000, type=int)
     parser.add_argument('--result_dir', default='eval_results', type=str)
-    parser.add_argument('--exp_name', default='success_100_600k', type=str)
+    parser.add_argument('--exp_name', default='MAERL-07-07-19-26-08-b4-s1_100k', type=str)
     args = parser.parse_args()
     return args
 
 
-def evaluate(env, agent, data_processor, video, num_episodes):
+def evaluate(env, agent, data_processor, video, num_episodes, json_path):
     def run_eval_loop(sample_stochastically=True):
         start_time = time.time()
         prefix = 'stochastic_' if sample_stochastically else ''
         success, collision, timeout = 0, 0, 0
+        suc_index, col_index, to_index = [], [], []
         for i in range(num_episodes):
             obs_sensor, obs_robot = env.reset(evaluation=True)
             step_taken = 0
@@ -54,12 +55,27 @@ def evaluate(env, agent, data_processor, video, num_episodes):
             video.save()
             if done_reason == 'target':
                 success += 1
+                suc_index.append(i)
             elif done_reason == 'collision':
                 collision += 1
+                col_index.append(i)
             elif done_reason == 'timeout':
                 timeout += 1
+                to_index.append(i)
             print(f"ER: {episode_reward} | DR: {done_reason} | SC: {success} | CL: {collision} | TO: {timeout}")
+        print("Success Index:", suc_index)
+        print("Collision Index:", col_index)
+        print("Timeout Index:", to_index)
         print("Evaluation Over")
+        results = {
+            "success_index": suc_index,
+            "collision_index": col_index,
+            "timeout_index": to_index
+        }
+        with open(os.path.join(json_path, 'eval_result'), 'w') as json_file:
+            json.dump(results, json_file, indent=4)
+
+
     run_eval_loop(sample_stochastically=False)
 
 
@@ -163,7 +179,7 @@ def main():
         )
     agent.load(args.work_dir, args.model_name, args.stepgrade)
 
-    evaluate(env, agent, data_processor, video, args.num_eval_episodes)
+    evaluate(env, agent, data_processor, video, args.num_eval_episodes, args.result_dir)
 
 
 if __name__ == '__main__':

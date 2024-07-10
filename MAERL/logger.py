@@ -8,6 +8,7 @@ import torchvision
 import numpy as np
 from termcolor import colored
 
+
 FORMAT_CONFIG = {
     'rl': {
         'train': [

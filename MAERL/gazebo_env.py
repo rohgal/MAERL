@@ -104,7 +104,7 @@ class GazeboEnv:
             self.pub_action([0.0, 0.0])
             self.reset_sim()
             self.spawn_robot()
-            self.set_goal(min_distance=3.0, safe_dist=0.4)
+            self.set_goal(min_distance=3.0, safe_dist=0.35)
             self.propagate_sim()
 
             laser_state = self.get_laser_obs()
@@ -134,13 +134,13 @@ class GazeboEnv:
         self.propagate_sim()
 
         laser_state = self.get_laser_obs()
-        collision, _ = self.check_collision(self.velodyne_data)
+        collision, min_laser = self.check_collision(self.velodyne_data)
         self.update_robot_cur_pose()
         theta, dist_curr = self.calculate_polar_goal(self.robot_x, self.robot_y, self.goal_x, self.goal_y, self.robot_yaw)
         target = self.check_goal_reached(dist_curr)
         self.distance_history.append(dist_curr)
         timeout = (self.episode_step+1 == self._max_episode_steps)
-        reward = self.get_reward(target, collision, timeout, dist_curr, self.distance_history[0])
+        reward = self.get_reward(target, collision, timeout, dist_curr, self.distance_history[0], min_laser)
         done = collision or timeout or target
 
         if collision:
@@ -312,13 +312,14 @@ class GazeboEnv:
         return collision, min_laser
 
     @staticmethod
-    def get_reward(target, collision, timeout, dist_curr, dist_prev):
+    def get_reward(target, collision, timeout, dist_curr, dist_prev, min_laser):
         if target:
             return np.float32(8.0)
         elif collision or timeout:
             return np.float32(-5.0)
         else:
-            return -5/800 + 0.5*(dist_prev - dist_curr)
+            safety = lambda x: 0.5 - x if x < 0.5 else 0.0
+            return -5/800 + 0.5*(dist_prev - dist_curr) - 0.25*safety(min_laser)
         
     @staticmethod
     def calculate_polar_goal(odom_x, odom_y, goal_x, goal_y, angle):

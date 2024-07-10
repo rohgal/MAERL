@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import copy
 from utils import soft_update_params, compare_weights
-from encoder import LidarEncoder
+from encoder import LidarEncoder, LidarDecoder
 from mean_vfe import MeanVFE
 from spconv_utils import spconv
 import time
@@ -215,6 +215,9 @@ class OccupancyMAE(nn.Module):
         super().__init__()
         self.vfe = critic.vfe
         self.encoder = critic.encoder
+
+        # self.decoder = LidarDecoder(self.encoder.feature_dim, self.encoder.batch_size)
+
         self.encoder_target = copy.deepcopy(critic.encoder)
         self.global_classifier = nn.Sequential(
             nn.Linear(self.encoder.feature_dim, head_hidden_dim), nn.ReLU(),
@@ -228,7 +231,12 @@ class OccupancyMAE(nn.Module):
         self.sparse_shape = self.encoder.sparse_shape
         self.mask_ratio = mask_ratio
 
+        self.criterion = nn.BCEWithLogitsLoss()
         self.apply(weight_init)
+
+    def occupancy_loss(self, pred, target):
+        loss = self.criterion(pred, target)
+        return loss
 
     def norm_mse_loss(self, f_x1s, f_x2s, mean=True):
         f_x1 = F.normalize(f_x1s.float(), p=2., dim=-1,
@@ -262,9 +270,25 @@ class OccupancyMAE(nn.Module):
                                  shuffle_id_list_select_4to5[:int((select_ratio+0.2)*len(shuffle_id_list_select_4to5))]
         ), 0)
 
+        # nums = voxel_features.shape[0]
+
+        # voxel_features_all_one = torch.ones(nums,1).to(voxel_features.device)
         voxel_features_partial, voxel_coords_partial = voxel_features[select_index,:], voxel_coordinates[select_index,:]
-    
+
+        # input_sp_tensor_ones = spconv.SparseConvTensor(
+        #     features=voxel_features_all_one,
+        #     indices=voxel_coordinates.int(),
+        #     spatial_shape=self.sparse_shape,
+        #     batch_size=self.batch_size
+        # )
+
         encoder_out = self.encoder(voxel_features_partial, voxel_coords_partial)
+
+        # decoder_out = self.decoder(encoder_out)
+
+        # pred = decoder_out
+        # target = input_sp_tensor_ones.dense()
+
         global_latents = self.global_classifier(encoder_out)
         global_latents = self.global_final_classifier(global_latents)
 
@@ -274,6 +298,7 @@ class OccupancyMAE(nn.Module):
 
         pred = global_latents
         target = global_latent_targets
+
         return pred, target
 
 
@@ -300,10 +325,12 @@ class MAESacAgent(object):
         critic_lr=1e-3,
         critic_beta=0.9,
         critic_tau=0.005,
+        critic_encoder_tau=0.05,
         critic_target_update_freq=2,
         encoder_lr=1e-3,
         encoder_tau=0.05,
-        encoder_feature_dim=100,
+        encoder_feature_dim=75,
+        encoder_target_update_freq=2,
         head_hidden_dim=200,
         mask_ratio=0.8,
         mae_update_freq=1,
@@ -314,9 +341,11 @@ class MAESacAgent(object):
         self.device = device
         self.discount = discount
         self.critic_tau = critic_tau
+        self.critic_encoder_tau = critic_encoder_tau
         self.encoder_tau = encoder_tau
         self.actor_update_freq = actor_update_freq
         self.critic_target_update_freq = critic_target_update_freq
+        self.encoder_target_update_freq = encoder_target_update_freq
         self.mae_update_freq = mae_update_freq
         self.log_interval = log_interval
         self.detach_encoder = detach_encoder
@@ -334,7 +363,7 @@ class MAESacAgent(object):
         self.critic_target.load_state_dict(self.critic.state_dict())
 
         # tie encoders between actor and critic
-        # self.actor.encoder.copy_conv_weights_from(self.critic.encoder)
+        self.actor.encoder.copy_conv_weights_from(self.critic.encoder)
 
         self.log_alpha = torch.tensor(np.log(init_temperature)).to(device)
         self.log_alpha.requires_grad = True
@@ -424,8 +453,8 @@ class MAESacAgent(object):
 
     def update_actor_and_alpha(self, voxels, coordinates, numpoints, robots, L, step):
         # detach encoder, so we don't update it with the actor loss
-        _, pi, log_pi, log_std = self.actor(voxels, coordinates, numpoints, robots, detach_encoder=False)
-        actor_Q1, actor_Q2 = self.critic(voxels, coordinates, numpoints, robots, pi, detach_encoder=False)
+        _, pi, log_pi, log_std = self.actor(voxels, coordinates, numpoints, robots, detach_encoder=True)
+        actor_Q1, actor_Q2 = self.critic(voxels, coordinates, numpoints, robots, pi, detach_encoder=True)
 
         actor_Q = torch.min(actor_Q1, actor_Q2)
         actor_loss = (self.alpha.detach() * log_pi - actor_Q).mean()
@@ -454,36 +483,39 @@ class MAESacAgent(object):
 
     def update_mae(self, voxels, coordinates, numpoints, L, step):
         pred, target = self.OccupancyMAE(voxels, coordinates, numpoints)
-        loss = self.OccupancyMAE.norm_mse_loss(pred, target).mean()
+        loss = self.OccupancyMAE.norm_mse_loss(pred, target)
         self.mae_optimizer.zero_grad()
         loss.backward()
         self.mae_optimizer.step()
         if step % self.log_interval == 0:
            L.log('train/rec_loss', loss.item(), step)
 
-    def update(self, replay_buffer, L, step):
+    def update(self, replay_buffer, L, step, only_mae=False):
         voxels, coordinates, numpoints, robots, \
         actions, rewards, next_voxels, \
         next_coordinates, next_numpoints, next_robots, not_done \
         = replay_buffer.sample_voxel()
-    
-        if step % self.log_interval == 0:
-            L.log('train/batch_reward', rewards.mean(), step)
 
-        self.update_critic(voxels, coordinates, numpoints, robots, actions, rewards, \
-                            next_voxels, next_coordinates, next_numpoints, next_robots, \
-                            not_done, L, step)
+        if not only_mae:
+            if step % self.log_interval == 0:
+                L.log('train/batch_reward', rewards.mean(), step)
 
-        if step % self.actor_update_freq == 0:
-            self.update_actor_and_alpha(voxels, coordinates, numpoints, robots, L, step)
+            self.update_critic(voxels, coordinates, numpoints, robots, actions, rewards, \
+                                next_voxels, next_coordinates, next_numpoints, next_robots, \
+                                not_done, L, step)
 
-        if step % self.critic_target_update_freq == 0:
-            soft_update_params(self.critic.Q1, self.critic_target.Q1,
-                                self.critic_tau)
-            soft_update_params(self.critic.Q2, self.critic_target.Q2,
-                                self.critic_tau)
-            soft_update_params(self.critic.encoder, self.critic_target.encoder,
-                                self.critic_tau)
+            if step % self.actor_update_freq == 0:
+                self.update_actor_and_alpha(voxels, coordinates, numpoints, robots, L, step)
+
+            if step % self.critic_target_update_freq == 0:
+                soft_update_params(self.critic.Q1, self.critic_target.Q1,
+                                    self.critic_tau)
+                soft_update_params(self.critic.Q2, self.critic_target.Q2,
+                                    self.critic_tau)
+                soft_update_params(self.critic.encoder, self.critic_target.encoder,
+                                    self.critic_encoder_tau)
+
+        if step % self.encoder_target_update_freq == 0:
             soft_update_params(self.OccupancyMAE.encoder, self.OccupancyMAE.encoder_target,
                                 self.encoder_tau)
             soft_update_params(self.OccupancyMAE.global_classifier, self.OccupancyMAE.global_target_classifier,

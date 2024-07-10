@@ -139,27 +139,35 @@ class LidarEncoder(nn.Module):
         tie_weights(src=source.ln, trg=self.ln)
 
 
-# class LidarDecoder(nn.Module):
-#     def __init__(self):
-#         super().__init__()
-#         self.deconv1 = nn.Sequential(
-#             nn.ConvTranspose3d(96, 48, 3, padding=(0,1,1), stride=2, bias=False),
-#             nn.BatchNorm3d(48),
-#             nn.ReLU()
-#         )
-#         self.deconv2 = nn.Sequential(
-#             nn.ConvTranspose3d(48, 16, 3, padding=(0,1,1), stride=(3,2,2), bias=False),
-#             nn.BatchNorm3d(16),
-#             nn.ReLU()
-#         )
-#         self.deconv3 = nn.Sequential(
-#             nn.ConvTranspose3d(16, 1, 3, padding=1, output_padding=1, stride=(3,2,2), bias=False),
-#         )
+class LidarDecoder(nn.Module):
+    def __init__(self, encoder_feature_dim, batch_size):
+        super().__init__()
+        self.batch_size = batch_size
+        self.feature_dim = encoder_feature_dim
+        self.fc = nn.Linear(self.feature_dim, 98304)
+        self.ln = nn.LayerNorm(98304)
+        self.deconv1 = nn.Sequential(
+            nn.ConvTranspose3d(96, 48, 3, padding=(0,1,1), stride=2, bias=False),
+            nn.BatchNorm3d(48),
+            nn.ReLU()
+        )
+        self.deconv2 = nn.Sequential(
+            nn.ConvTranspose3d(48, 16, 3, padding=(0,1,1), stride=(3,2,2), bias=False),
+            nn.BatchNorm3d(16),
+            nn.ReLU()
+        )
+        self.deconv3 = nn.Sequential(
+            nn.ConvTranspose3d(16, 1, 3, padding=1, output_padding=1, stride=(3,2,2), bias=False),
+        )
 
-#     def forward(self, encoder_out):
-#         x = encoder_out
-#         x_up1 = self.deconv1(x)
-#         x_up2 = self.deconv2(x_up1)
-#         x_up3 = self.deconv3(x_up2)
-#         out = x_up3
-#         return out
+    def forward(self, encoder_out):
+        x_fc = self.fc(encoder_out)
+        x_norm = self.ln(x_fc)
+
+        h =x_norm.view(self.batch_size, 96, 1, 32, -1)
+        
+        h_up1 = self.deconv1(h)
+        h_up2 = self.deconv2(h_up1)
+        h_up3 = self.deconv3(h_up2)
+        out = h_up3
+        return out
