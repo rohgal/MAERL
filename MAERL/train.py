@@ -27,7 +27,7 @@ def parse_args():
     parser.add_argument('--frame_stack', default=3, type=int)
     # train
     parser.add_argument('--agent', default='mae_sac', type=str)
-    parser.add_argument('--init_steps', default=10, type=int)
+    parser.add_argument('--init_steps', default=100000, type=int)
     parser.add_argument('--num_train_steps', default=1000000, type=int)
     parser.add_argument('--batch_size', default=4, type=int)
     parser.add_argument('--detach_encoder', default=False, action='store_true')
@@ -51,7 +51,7 @@ def parse_args():
     parser.add_argument('--encoder_target_update_freq', default=2, type=int)
     parser.add_argument('--head_hidden_dim', default=200, type=int)
     parser.add_argument('--mask_ratio', default=0.8, type=float)
-    parser.add_argument('--mae_cutoff_step', default=10000, type=int)
+    parser.add_argument('--mae_cutoff_step', default=100000, type=int)
     # sac
     parser.add_argument('--discount', default=0.99, type=float)
     parser.add_argument('--init_temperature', default=0.1, type=float)
