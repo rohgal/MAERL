@@ -198,7 +198,6 @@ class ReplayBuffer(Dataset):
         self.full = self.full or self.idx == 0
         
     def transform_stacked_points_to_dense_voxels(self, obs_sensor):
-        start_time = time.time()
         obs_voxels = None
         obs_coordinates = None
         obs_numpoints = None
@@ -230,8 +229,6 @@ class ReplayBuffer(Dataset):
             batch_size=self.frame_stack,
                 )
         voxels_dense_features = voxels_features_sp_tensor.dense()
-        execution_time = time.time() - start_time
-        print(f"Code executed in: {execution_time} seconds")
         return voxels_dense_features
 
     def transform_batched_stacked_points_to_dense_voxels(self, obses_sensor, obses_voxels_dense_tensor):

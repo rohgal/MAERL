@@ -194,7 +194,7 @@ def main():
     start_time = time.time()
 
     for step in range(args.num_train_steps):
-        start_time = time.time()
+        # start_time = time.time()
         if step % args.model_save_freq == 0:
             if args.do_eval:
                 L.log('eval/episode', episode, step)
@@ -226,7 +226,7 @@ def main():
                 agent.update(replay_buffer, L, step, only_mae=True)
         else:
             with utils.eval_mode(agent):
-                action = agent.sample_action(obs_sensor, obs_direction)
+                action = agent.sample_action(replay_buffer.transform_stacked_points_to_dense_voxels, obs_sensor, obs_direction)
         a_in = [(action[0] + 1) / 2, action[1]]
 
         # run training update
@@ -244,8 +244,8 @@ def main():
         obs_direction = next_obs_direction
         episode_step += 1
 
-        execution_time = time.time() - start_time
-        print(f"Code executed in: {execution_time} seconds")
+        # execution_time = time.time() - start_time
+        # print(f"Code executed in: {execution_time} seconds")
     
 
 if __name__ == '__main__':
