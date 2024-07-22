@@ -34,7 +34,7 @@ def evaluate(env, agent, data_processor, video, num_episodes, json_path):
         success, collision, timeout = 0, 0, 0
         suc_index, col_index, to_index = [], [], []
         for i in range(num_episodes):
-            obs_sensor, obs_robot = env.reset(evaluation=True)
+            obs_sensor, obs_direction = env.reset(evaluation=True)
             step_taken = 0
             done = False
             done_reason = None
@@ -45,11 +45,11 @@ def evaluate(env, agent, data_processor, video, num_episodes, json_path):
                 with utils.eval_mode(agent):
                     voxels, coordinates, numpoints = data_processor.forward(obs_sensor)
                     if sample_stochastically:
-                        action = agent.sample_action(voxels, coordinates, numpoints, obs_robot)
+                        action = agent.sample_action(voxels, coordinates, numpoints, obs_direction)
                     else:
-                        action = agent.select_action(voxels, coordinates, numpoints, obs_robot)
+                        action = agent.select_action(voxels, coordinates, numpoints, obs_direction)
                 a_in = [(action[0] + 1) / 2, action[1]]
-                obs_sensor, obs_robot, reward, done, done_reason = env.step(a_in)
+                obs_sensor, obs_direction, reward, done, done_reason = env.step(a_in)
                 step_taken += 1
                 episode_reward += reward
             video.save()
@@ -81,10 +81,10 @@ def evaluate(env, agent, data_processor, video, num_episodes, json_path):
 
 class TestAgent(object):
     def __init__(
-        self, num_point_features, grid_size, encoder_feature_dim, batch_size, robot_state_shape, action_shape, hidden_dim, log_std_min, log_std_max, device
+        self, num_point_features, grid_size, encoder_feature_dim, batch_size, direction_state_shape, action_shape, hidden_dim, log_std_min, log_std_max, device
     ):
         self.device = device
-        self.actor = Actor(num_point_features, grid_size, encoder_feature_dim, batch_size, robot_state_shape, action_shape, hidden_dim, log_std_min, log_std_max
+        self.actor = Actor(num_point_features, grid_size, encoder_feature_dim, batch_size, direction_state_shape, action_shape, hidden_dim, log_std_min, log_std_max
         ).to(device)
         self.train()
 
@@ -93,7 +93,7 @@ class TestAgent(object):
             torch.load('%s/%s/model/actor_%s.pt' % (work_dir, model_name, step))
         )
 
-    def select_action(self, voxels, coordinates, numpoints, obs_robot):
+    def select_action(self, voxels, coordinates, numpoints, obs_direction):
         with torch.no_grad():
             batch_index = np.full((coordinates.shape[0], 1), 0, dtype=np.int32)
             batched_coordinates = np.concatenate((batch_index, coordinates), axis=1)
@@ -101,13 +101,13 @@ class TestAgent(object):
             voxels_tsr = torch.as_tensor(voxels, device=self.device)
             coordinates_tsr = torch.as_tensor(batched_coordinates, device=self.device)
             numpoints_tsr = torch.as_tensor(numpoints, device=self.device)
-            obs_robot_tsr = torch.as_tensor(obs_robot, device=self.device)
-            obs_robot_tsr = obs_robot_tsr.unsqueeze(0)
+            obs_direction_tsr = torch.as_tensor(obs_direction, device=self.device)
+            obs_direction_tsr = obs_direction_tsr.unsqueeze(0)
 
-            mu, _, _, _ = self.actor(voxels_tsr, coordinates_tsr, numpoints_tsr, obs_robot_tsr, compute_pi=False, compute_log_pi=False, downstream=True)
+            mu, _, _, _ = self.actor(voxels_tsr, coordinates_tsr, numpoints_tsr, obs_direction_tsr, compute_pi=False, compute_log_pi=False)
             return mu.cpu().data.numpy().flatten()
 
-    def sample_action(self, voxels, coordinates, numpoints, obs_robot):
+    def sample_action(self, voxels, coordinates, numpoints, obs_direction):
         with torch.no_grad():
             batch_index = np.full((coordinates.shape[0], 1), 0, dtype=np.int32)
             batched_coordinates = np.concatenate((batch_index, coordinates), axis=1)
@@ -115,10 +115,10 @@ class TestAgent(object):
             voxels_tsr = torch.as_tensor(voxels, device=self.device)
             coordinates_tsr = torch.as_tensor(batched_coordinates, device=self.device)
             numpoints_tsr = torch.as_tensor(numpoints, device=self.device)
-            obs_robot_tsr = torch.as_tensor(obs_robot, device=self.device)
-            obs_robot_tsr = obs_robot_tsr.unsqueeze(0)
+            obs_direction_tsr = torch.as_tensor(obs_direction, device=self.device)
+            obs_direction_tsr = obs_direction_tsr.unsqueeze(0)
 
-            mu, pi, _, _ = self.actor(voxels_tsr, coordinates_tsr, numpoints_tsr, obs_robot_tsr, compute_log_pi=False, downstream=True)
+            mu, pi, _, _ = self.actor(voxels_tsr, coordinates_tsr, numpoints_tsr, obs_direction_tsr, compute_log_pi=False)
             return pi.cpu().data.numpy().flatten()
 
     def train(self, training=True):
@@ -160,7 +160,7 @@ def main():
     encoder_feature_dim = parameters.get('encoder_feature_dim', 0)
     
     action_shape = env.action_space.shape
-    robot_state_shape = env.robot_state_shape
+    direction_state_shape = env.direction_state_shape
     grid_size = np.round((np.array(point_cloud_range)[3:6] - np.array(point_cloud_range)[0:3]) / np.array(voxel_size)).astype(np.int64)
     data_processor = utils.DataProcessor(point_cloud_range, num_point_features, voxel_size, max_num_points_per_voxel, max_num_voxels)
     
@@ -170,7 +170,7 @@ def main():
         grid_size=grid_size,
         encoder_feature_dim=encoder_feature_dim,
         batch_size=1,
-        robot_state_shape=robot_state_shape,
+        direction_state_shape=direction_state_shape,
         action_shape=action_shape,
         hidden_dim=hidden_dim,
         log_std_min=actor_log_std_min,

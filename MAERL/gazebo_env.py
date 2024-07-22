@@ -28,7 +28,7 @@ TIME_DELTA = 0.1
 
 class GazeboEnv:
     def __init__(self, launchfile):
-        self.robot_state_shape = (4,)
+        self.direction_state_shape = (2,)
         self.action_space = gym.spaces.Box(low=np.array([-1.0, -1.0]),
                                 high=np.array([1.0, 1.0]),
                                 dtype=np.float32)
@@ -42,7 +42,7 @@ class GazeboEnv:
         self.goal_x = None
         self.goal_y = None
 
-        self.distance_history = deque(maxlen=4)
+        self.distance_history = deque([], maxlen=4)
 
         self.last_odom = None
         self.velodyne_data = []
@@ -111,8 +111,8 @@ class GazeboEnv:
             theta, distance = self.calculate_polar_goal(self.robot_x, self.robot_y, self.goal_x, self.goal_y, self.robot_yaw)
             self.distance_history.extend([distance] * 4)
 
-            robot_state = np.array([distance, theta, 0.0, 0.0], dtype=np.float32)
-            return laser_state, robot_state
+            direction_state = np.array([distance, theta], dtype=np.float32)
+            return laser_state, direction_state
         else:
             self.episode_step = 0
             self.pub_action([0.0, 0.0])
@@ -125,8 +125,8 @@ class GazeboEnv:
             theta, distance = self.calculate_polar_goal(self.robot_x, self.robot_y, self.goal_x, self.goal_y, self.robot_yaw)
             self.distance_history.extend([distance] * 4)
 
-            robot_state = np.array([distance, theta, 0.0, 0.0], dtype=np.float32)
-            return laser_state, robot_state
+            direction_state = np.array([distance, theta], dtype=np.float32)
+            return laser_state, direction_state
 
     def step(self, action):
         self.pub_action(action)
@@ -152,9 +152,9 @@ class GazeboEnv:
         else:
             done_reason = None
 
-        robot_state = np.array([dist_curr, theta, action[0], action[1]], dtype=np.float32)
+        direction_state = np.array([dist_curr, theta], dtype=np.float32)
         self.episode_step+=1
-        return laser_state, robot_state, reward, done, done_reason
+        return laser_state, direction_state, reward, done, done_reason
 
     def spawn_robot(self):
         start_x, start_y, start_yaw = self.map_manager.get_random_pos_on_map(safe_dist=0.43)
@@ -319,7 +319,7 @@ class GazeboEnv:
             return np.float32(-5.0)
         else:
             safety = lambda x: 0.5 - x if x < 0.5 else 0.0
-            return -5/800 + 0.5*(dist_prev - dist_curr) - 0.25*safety(min_laser)
+            return -5/800 + 0.5*(dist_prev - dist_curr) - 0.1*safety(min_laser)
         
     @staticmethod
     def calculate_polar_goal(odom_x, odom_y, goal_x, goal_y, angle):

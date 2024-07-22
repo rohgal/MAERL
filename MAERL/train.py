@@ -24,6 +24,7 @@ def parse_args():
     parser.add_argument('--max_num_voxels', default=60000, type=int)
     # replay buffer
     parser.add_argument('--replay_buffer_capacity', default=100000, type=int)
+    parser.add_argument('--frame_stack', default=3, type=int)
     # train
     parser.add_argument('--agent', default='mae_sac', type=str)
     parser.add_argument('--init_steps', default=10000, type=int)
@@ -43,14 +44,14 @@ def parse_args():
     parser.add_argument('--actor_log_std_min', default=-10, type=float)
     parser.add_argument('--actor_log_std_max', default=2, type=float)
     parser.add_argument('--actor_update_freq', default=2, type=int)
-    # mlr
+    # mae
     parser.add_argument('--encoder_lr', default=1e-4, type=float)
     parser.add_argument('--encoder_tau', default=0.05, type=float)
     parser.add_argument('--encoder_feature_dim', default=75, type=int)
     parser.add_argument('--encoder_target_update_freq', default=2, type=int)
     parser.add_argument('--head_hidden_dim', default=200, type=int)
     parser.add_argument('--mask_ratio', default=0.8, type=float)
-    parser.add_argument('--mae_cutoff_step', default=600000, type=int)
+    parser.add_argument('--mae_cutoff_step', default=10000, type=int)
     # sac
     parser.add_argument('--discount', default=0.99, type=float)
     parser.add_argument('--init_temperature', default=0.1, type=float)
@@ -76,7 +77,7 @@ def evaluate(env, agent, data_processor, video, num_episodes, L, step, args):
     def run_eval_loop(sample_stochastically=True):
         prefix = 'stochastic_' if sample_stochastically else ''
         for i in range(num_episodes):
-            obs_sensor, obs_robot = env.reset(evaluation=True)
+            obs_sensor, obs_direction = env.reset(evaluation=True)
             video.init(enabled=(i == 0))
             video.record('%d' % step)
             done = False
@@ -85,11 +86,11 @@ def evaluate(env, agent, data_processor, video, num_episodes, L, step, args):
                 with utils.eval_mode(agent):
                     voxels, coordinates, numpoints = data_processor.forward(obs_sensor)
                     if sample_stochastically:
-                        action = agent.sample_action(voxels, coordinates, numpoints, obs_robot)
+                        action = agent.sample_action(voxels, coordinates, numpoints, obs_direction)
                     else:
-                        action = agent.select_action(voxels, coordinates, numpoints, obs_robot)
+                        action = agent.select_action(voxels, coordinates, numpoints, obs_direction)
                 a_in = [(action[0] + 1) / 2, action[1]]
-                obs_sensor, obs_robot, reward, done, done_reason = env.step(a_in)
+                obs_sensor, obs_direction, reward, done, done_reason = env.step(a_in)
                 episode_reward += reward
             video.save()
             all_ep_rewards.append(episode_reward)
@@ -111,6 +112,8 @@ def main():
     utils.set_seed_everywhere(args.seed)
     env = GazeboEnv("multi_robot_scenario.launch")
     time.sleep(3)
+
+    env = utils.FrameStack(env, k=args.frame_stack)
     
     # make directory
     ts = time.gmtime() 
@@ -135,7 +138,7 @@ def main():
 
     # set shape
     action_shape = env.action_space.shape
-    robot_state_shape = env.robot_state_shape
+    direction_state_shape = env.direction_state_shape
 
     grid_size = np.round((np.array(args.point_cloud_range)[3:6] - np.array(args.point_cloud_range)[0:3]) / np.array(args.voxel_size)).astype(np.int64)
 
@@ -145,15 +148,18 @@ def main():
         action_shape=action_shape,
         capacity=args.replay_buffer_capacity,
         batch_size=args.batch_size,
-        device=device,
         data_processor = data_processor,
+        frame_stack=args.frame_stack,
+        num_point_features=args.num_point_features,
+        grid_size = grid_size,
+        device=device,
     )
 
     agent = MAESacAgent(
-            num_point_features=args.num_point_features,
+            num_point_features=args.num_point_features*args.frame_stack,
             grid_size=grid_size,
             batch_size=args.batch_size,
-            robot_state_shape=robot_state_shape,
+            direction_state_shape=direction_state_shape,
             action_shape=action_shape,
             device=device,
             hidden_dim=args.hidden_dim,
@@ -188,6 +194,7 @@ def main():
     start_time = time.time()
 
     for step in range(args.num_train_steps):
+        start_time = time.time()
         if step % args.model_save_freq == 0:
             if args.do_eval:
                 L.log('eval/episode', episode, step)
@@ -205,7 +212,7 @@ def main():
             if step >= args.init_steps:
                 L.log('train/episode_reward', episode_reward, step)
 
-            obs_sensor, obs_robot = env.reset()
+            obs_sensor, obs_direction = env.reset()
             done = False
             episode_reward = 0
             episode_step = 0
@@ -219,8 +226,7 @@ def main():
                 agent.update(replay_buffer, L, step, only_mae=True)
         else:
             with utils.eval_mode(agent):
-                voxels, coordinates, numpoints = data_processor.forward(obs_sensor)
-                action = agent.sample_action(voxels, coordinates, numpoints, obs_robot)
+                action = agent.sample_action(obs_sensor, obs_direction)
         a_in = [(action[0] + 1) / 2, action[1]]
 
         # run training update
@@ -229,14 +235,17 @@ def main():
             for _ in range(num_updates):
                 agent.update(replay_buffer, L, step)
         
-        next_obs_sensor, next_obs_robot, reward, done, _ = env.step(a_in)
+        next_obs_sensor, next_obs_direction, reward, done, _ = env.step(a_in)
 
         episode_reward += reward
-        replay_buffer.add(obs_sensor, obs_robot, action, reward, next_obs_sensor, next_obs_robot, done)
+        replay_buffer.add(obs_sensor, obs_direction, action, reward, next_obs_sensor, next_obs_direction, done)
 
         obs_sensor = next_obs_sensor
-        obs_robot = next_obs_robot
+        obs_direction = next_obs_direction
         episode_step += 1
+
+        execution_time = time.time() - start_time
+        print(f"Code executed in: {execution_time} seconds")
     
 
 if __name__ == '__main__':

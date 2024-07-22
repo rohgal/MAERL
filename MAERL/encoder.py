@@ -27,71 +27,56 @@ def tie_weights(src, trg):
             trg[i].bias = src[i].bias
 
 
-def post_act_block(in_channels, out_channels, kernel_size, indice_key=None, stride=1, padding=0,
-                   conv_type='subm', norm_fn=None):
-
-    if conv_type == 'subm':
-        conv = spconv.SubMConv3d(in_channels, out_channels, kernel_size, bias=False, indice_key=indice_key)
-    elif conv_type == 'spconv':
-        conv = spconv.SparseConv3d(in_channels, out_channels, kernel_size, stride=stride, padding=padding,
-                                   bias=False, indice_key=indice_key)
-    elif conv_type == 'inverseconv':
-        conv = spconv.SparseInverseConv3d(in_channels, out_channels, kernel_size, indice_key=indice_key, bias=False)
-    else:
-        raise NotImplementedError
-
-    m = spconv.SparseSequential(
+def post_act_block(in_channels, out_channels, kernel_size, stride=1, padding=0, norm_fn=None):
+    conv = nn.Conv3d(in_channels, out_channels, kernel_size, stride=stride, padding=padding, bias=False)
+    m = nn.Sequential(
         conv,
         norm_fn(out_channels),
         nn.ReLU(),
     )
     return m
 
-
 class LidarEncoder(nn.Module):
-    def __init__(self, num_point_features, grid_size, encoder_feature_dim, batch_size):
+    def __init__(self, num_point_features, encoder_feature_dim):
         super().__init__()
-        self.sparse_shape = grid_size[::-1] + [1, 0, 0]
-        self.batch_size = batch_size
         self.feature_dim = encoder_feature_dim
 
-        norm_fn = partial(nn.BatchNorm1d, eps=1e-3, momentum=0.01)
+        norm_fn = partial(nn.BatchNorm3d, eps=1e-3, momentum=0.01)
 
         self.last_pad = 0
 
-        self.conv_input = spconv.SparseSequential(
-            spconv.SubMConv3d(num_point_features, 12, 3, padding=1, bias=False, indice_key='subm1'),
+        self.conv_input = nn.Sequential(
+            nn.Conv3d(num_point_features, 12, 3, padding=1, bias=False),
             norm_fn(12),
             nn.ReLU(),
         )
 
         block = post_act_block
 
-        self.conv1 = spconv.SparseSequential(
-            block(12, 12, 3, norm_fn=norm_fn, padding=1, indice_key='subm1'),
+        self.conv1 = nn.Sequential(
+            block(12, 12, 3, padding=1, norm_fn=norm_fn),
         )
 
-        self.conv2 = spconv.SparseSequential(
-            block(12, 24, 3, norm_fn=norm_fn, stride=2, padding=1, indice_key='spconv2', conv_type='spconv'),
-            block(24, 24, 3, norm_fn=norm_fn, padding=1, indice_key='subm2'),
-            block(24, 24, 3, norm_fn=norm_fn, padding=1, indice_key='subm2'),
+        self.conv2 = nn.Sequential(
+            block(12, 24, 3, stride=2, padding=1, norm_fn=norm_fn),
+            block(24, 24, 3, padding=1, norm_fn=norm_fn),
+            block(24, 24, 3, padding=1, norm_fn=norm_fn),
         )
 
-        self.conv3 = spconv.SparseSequential(
-            block(24, 48, 3, norm_fn=norm_fn, stride=2, padding=1, indice_key='spconv3', conv_type='spconv'),
-            block(48, 48, 3, norm_fn=norm_fn, padding=1, indice_key='subm3'),
-            block(48, 48, 3, norm_fn=norm_fn, padding=1, indice_key='subm3'),
+        self.conv3 = nn.Sequential(
+            block(24, 48, 3, stride=2, padding=1, norm_fn=norm_fn),
+            block(48, 48, 3, padding=1, norm_fn=norm_fn),
+            block(48, 48, 3, padding=1, norm_fn=norm_fn),
         )
 
-        self.conv4 = spconv.SparseSequential(
-            block(48, 48, 3, norm_fn=norm_fn, stride=2, padding=(0, 1, 1), indice_key='spconv4', conv_type='spconv'),
-            block(48, 48, 3, norm_fn=norm_fn, padding=1, indice_key='subm4'),
-            block(48, 48, 3, norm_fn=norm_fn, padding=1, indice_key='subm4'),
+        self.conv4 = nn.Sequential(
+            block(48, 48, 3, stride=2, padding=(0, 1, 1), norm_fn=norm_fn),
+            block(48, 48, 3, padding=1, norm_fn=norm_fn),
+            block(48, 48, 3, padding=1, norm_fn=norm_fn),
         )
 
-        self.conv_out = spconv.SparseSequential(
-            spconv.SparseConv3d(48, 96, (3, 1, 1), stride=(2, 1, 1), padding=self.last_pad,
-                                bias=False, indice_key='spconv_down2'),
+        self.conv_out = nn.Sequential(
+            nn.Conv3d(48, 96, (3, 1, 1), stride=(2, 1, 1), padding=self.last_pad, bias=False),
             norm_fn(96),
             nn.ReLU(),
         )
@@ -99,31 +84,15 @@ class LidarEncoder(nn.Module):
         self.fc = nn.Linear(98304, self.feature_dim)
         self.ln = nn.LayerNorm(self.feature_dim)
 
-    def forward(self, voxel_features, voxel_coordinates, downstream=False):
-        if downstream:
-            input_sp_tensor = spconv.SparseConvTensor(
-            features=voxel_features,
-            indices=voxel_coordinates.int(),
-            spatial_shape=self.sparse_shape,
-            batch_size=1,
-            )
-        else:
-            input_sp_tensor = spconv.SparseConvTensor(
-                features=voxel_features,
-                indices=voxel_coordinates.int(),
-                spatial_shape=self.sparse_shape,
-                batch_size=self.batch_size,
-            )
-
-        x = self.conv_input(input_sp_tensor)
+    def forward(self, voxels):
+        x = self.conv_input(voxels)
         x_conv1 = self.conv1(x)
         x_conv2 = self.conv2(x_conv1)
         x_conv3 = self.conv3(x_conv2)
         x_conv4 = self.conv4(x_conv3)
         x_out = self.conv_out(x_conv4)
-        out_dense = x_out.dense()
 
-        h = out_dense.view(out_dense.size(0), -1)
+        h = x_out.view(x_out.size(0), -1)
         h_fc = self.fc(h)
         h_norm = self.ln(h_fc)
         return h_norm
@@ -140,9 +109,8 @@ class LidarEncoder(nn.Module):
 
 
 class LidarDecoder(nn.Module):
-    def __init__(self, encoder_feature_dim, batch_size):
+    def __init__(self, encoder_feature_dim):
         super().__init__()
-        self.batch_size = batch_size
         self.feature_dim = encoder_feature_dim
         self.fc = nn.Linear(self.feature_dim, 98304)
         self.ln = nn.LayerNorm(98304)
@@ -157,14 +125,14 @@ class LidarDecoder(nn.Module):
             nn.ReLU()
         )
         self.deconv3 = nn.Sequential(
-            nn.ConvTranspose3d(16, 1, 3, padding=1, output_padding=1, stride=(3,2,2), bias=False),
+            nn.ConvTranspose3d(16, 9, 3, padding=1, output_padding=1, stride=(3,2,2), bias=False),
         )
 
     def forward(self, encoder_out):
         x_fc = self.fc(encoder_out)
         x_norm = self.ln(x_fc)
 
-        h =x_norm.view(self.batch_size, 96, 1, 32, -1)
+        h = x_norm.view(-1, 96, 1, 32, 32)
         
         h_up1 = self.deconv1(h)
         h_up2 = self.deconv2(h_up1)
