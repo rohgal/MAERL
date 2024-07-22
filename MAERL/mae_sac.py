@@ -177,11 +177,9 @@ class Critic(nn.Module):
     def forward(self, voxels, direction_states, action, detach_encoder=False):
         if detach_encoder:
             with torch.no_grad():
-                voxel_features = self.vfe(voxels, voxel_numpoints)
-                encoder_out = self.encoder(voxel_features, voxel_coordinates)
+                encoder_out = self.encoder(voxels)
         else:
-            voxel_features = self.vfe(voxels, voxel_numpoints)
-            encoder_out = self.encoder(voxel_features, voxel_coordinates)
+            encoder_out = self.encoder(voxels)
 
         q1 = self.Q1(encoder_out, direction_states, action)
         q2 = self.Q2(encoder_out, direction_states, action)
@@ -286,8 +284,10 @@ class MAESacAgent(object):
         self.encoder_target_update_freq = encoder_target_update_freq
         self.mae_update_freq = mae_update_freq
         self.log_interval = log_interval
+        self.num_point_features = num_point_features
         self.detach_encoder = detach_encoder
         self.mae_cutoff_step = mae_cutoff_step
+        self.voxels_shape = grid_size[::-1] + [1, 0, 0]
 
         self.actor = Actor(num_point_features, grid_size, encoder_feature_dim, direction_state_shape, action_shape, hidden_dim, actor_log_std_min, actor_log_std_max
         ).to(device)

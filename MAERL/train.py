@@ -27,7 +27,7 @@ def parse_args():
     parser.add_argument('--frame_stack', default=3, type=int)
     # train
     parser.add_argument('--agent', default='mae_sac', type=str)
-    parser.add_argument('--init_steps', default=10000, type=int)
+    parser.add_argument('--init_steps', default=10, type=int)
     parser.add_argument('--num_train_steps', default=1000000, type=int)
     parser.add_argument('--batch_size', default=4, type=int)
     parser.add_argument('--detach_encoder', default=False, action='store_true')
@@ -194,7 +194,7 @@ def main():
     start_time = time.time()
 
     for step in range(args.num_train_steps):
-        # start_time = time.time()
+        start_time = time.time()
         if step % args.model_save_freq == 0:
             if args.do_eval:
                 L.log('eval/episode', episode, step)
@@ -244,8 +244,8 @@ def main():
         obs_direction = next_obs_direction
         episode_step += 1
 
-        # execution_time = time.time() - start_time
-        # print(f"Code executed in: {execution_time} seconds")
+        execution_time = time.time() - start_time
+        print(f"Code executed in: {execution_time} seconds")
     
 
 if __name__ == '__main__':
