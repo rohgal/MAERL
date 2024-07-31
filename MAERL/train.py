@@ -17,6 +17,7 @@ from gazebo_env import GazeboEnv
 def parse_args():
     parser = argparse.ArgumentParser()
     # voxelizer
+    parser.add_argument('--frame_stack', default=3, type=int)
     parser.add_argument('--num_point_features', default=3, type=int)
     parser.add_argument('--point_cloud_range', nargs="*", default=[-5.0, -5.0, -0.35, 5.0, 5.0, 0.65], type=float)
     parser.add_argument('--voxel_size', nargs="*", default=[0.04, 0.04, 0.04], type=float)
@@ -24,10 +25,9 @@ def parse_args():
     parser.add_argument('--max_num_voxels', default=60000, type=int)
     # replay buffer
     parser.add_argument('--replay_buffer_capacity', default=100000, type=int)
-    parser.add_argument('--frame_stack', default=3, type=int)
     # train
     parser.add_argument('--agent', default='mae_sac', type=str)
-    parser.add_argument('--init_steps', default=100000, type=int)
+    parser.add_argument('--init_steps', default=10000, type=int)
     parser.add_argument('--num_train_steps', default=1000000, type=int)
     parser.add_argument('--batch_size', default=4, type=int)
     parser.add_argument('--detach_encoder', default=False, action='store_true')
@@ -49,9 +49,8 @@ def parse_args():
     parser.add_argument('--encoder_tau', default=0.05, type=float)
     parser.add_argument('--encoder_feature_dim', default=75, type=int)
     parser.add_argument('--encoder_target_update_freq', default=2, type=int)
-    parser.add_argument('--head_hidden_dim', default=200, type=int)
     parser.add_argument('--mask_ratio', default=0.8, type=float)
-    parser.add_argument('--mae_cutoff_step', default=100000, type=int)
+    parser.add_argument('--mae_cutoff_step', default=10000, type=int)
     # sac
     parser.add_argument('--discount', default=0.99, type=float)
     parser.add_argument('--init_temperature', default=0.1, type=float)
@@ -71,7 +70,7 @@ def parse_args():
     return args
 
 
-def evaluate(env, agent, data_processor, video, num_episodes, L, step, args):
+def evaluate(env, agent, processfunc, video, num_episodes, L, step, args):
     all_ep_rewards = []
 
     def run_eval_loop(sample_stochastically=True):
@@ -84,11 +83,10 @@ def evaluate(env, agent, data_processor, video, num_episodes, L, step, args):
             episode_reward = 0
             while not done:
                 with utils.eval_mode(agent):
-                    voxels, coordinates, numpoints = data_processor.forward(obs_sensor)
                     if sample_stochastically:
-                        action = agent.sample_action(voxels, coordinates, numpoints, obs_direction)
+                        action = agent.sample_action(obs_sensor, obs_direction, processfunc=processfunc)
                     else:
-                        action = agent.select_action(voxels, coordinates, numpoints, obs_direction)
+                        action = agent.select_action(obs_sensor, obs_direction, processfunc=processfunc)
                 a_in = [(action[0] + 1) / 2, action[1]]
                 obs_sensor, obs_direction, reward, done, done_reason = env.step(a_in)
                 episode_reward += reward
@@ -141,24 +139,21 @@ def main():
     direction_state_shape = env.direction_state_shape
 
     grid_size = np.round((np.array(args.point_cloud_range)[3:6] - np.array(args.point_cloud_range)[0:3]) / np.array(args.voxel_size)).astype(np.int64)
-
     data_processor = utils.DataProcessor(args.point_cloud_range, args.num_point_features, args.voxel_size, args.max_num_points_per_voxel, args.max_num_voxels)
 
     replay_buffer = utils.ReplayBuffer(
         action_shape=action_shape,
         capacity=args.replay_buffer_capacity,
         batch_size=args.batch_size,
-        data_processor = data_processor,
-        frame_stack=args.frame_stack,
-        num_point_features=args.num_point_features,
-        grid_size = grid_size,
         device=device,
+        data_processor = data_processor,
     )
 
     agent = MAESacAgent(
-            num_point_features=args.num_point_features*args.frame_stack,
+            num_point_features=args.num_point_features,
             grid_size=grid_size,
             batch_size=args.batch_size,
+            frame_stack = args.frame_stack,
             direction_state_shape=direction_state_shape,
             action_shape=action_shape,
             device=device,
@@ -180,8 +175,6 @@ def main():
             encoder_lr=args.encoder_lr,
             encoder_tau=args.encoder_tau,
             encoder_feature_dim=args.encoder_feature_dim,
-            encoder_target_update_freq=args.encoder_target_update_freq,
-            head_hidden_dim=args.head_hidden_dim,
             mask_ratio=args.mask_ratio,
             mae_cutoff_step=args.mae_cutoff_step,
             log_interval=args.log_interval,
@@ -192,13 +185,11 @@ def main():
 
     episode, episode_reward, done = 0, 0, True
     start_time = time.time()
-
     for step in range(args.num_train_steps):
-        start_time = time.time()
         if step % args.model_save_freq == 0:
             if args.do_eval:
                 L.log('eval/episode', episode, step)
-                evaluate(env, agent, data_processor, video, args.num_eval_episodes, L, step, args)
+                evaluate(env, agent, replay_buffer.batched_points_to_voxels, video, args.num_eval_episodes, L, step, args)
             if args.save_model:
                 agent.save(model_dir, step)
             if args.save_buffer:
@@ -222,11 +213,12 @@ def main():
         # sample action for data collection
         if step < args.init_steps:
             action = env.action_space.sample()
-            if step > args.batch_size:
-                agent.update(replay_buffer, L, step, only_mae=True)
+            # if step > args.batch_size:
+            #     agent.update(replay_buffer, L, step, only_mae=True)
         else:
             with utils.eval_mode(agent):
-                action = agent.sample_action(replay_buffer.transform_stacked_points_to_dense_voxels, obs_sensor, obs_direction)
+                action = agent.sample_action(obs_sensor, obs_direction, processfunc=replay_buffer.batched_points_to_voxels)
+
         a_in = [(action[0] + 1) / 2, action[1]]
 
         # run training update
@@ -243,9 +235,6 @@ def main():
         obs_sensor = next_obs_sensor
         obs_direction = next_obs_direction
         episode_step += 1
-
-        execution_time = time.time() - start_time
-        print(f"Code executed in: {execution_time} seconds")
     
 
 if __name__ == '__main__':

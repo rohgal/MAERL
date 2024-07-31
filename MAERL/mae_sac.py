@@ -3,13 +3,14 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import copy
+from mean_vfe import MeanVFE
 from utils import soft_update_params, compare_weights
 from encoder import LidarEncoder, LidarDecoder
-from mean_vfe import MeanVFE
 from spconv_utils import spconv
-import time
+
 
 LOG_FREQ = 10000
+
 
 def gaussian_logprob(noise, log_std):
     """Compute Gaussian log probability."""
@@ -28,52 +29,68 @@ def squash(mu, pi, log_pi):
 
 
 def weight_init(m):
-    """Custom weight init for 3D convolutional and normalization layers."""
-    if isinstance(m, nn.Conv3d):
-        nn.init.xavier_normal_(m.weight)
-        if m.bias is not None:
-            nn.init.constant_(m.bias, 0)
-    elif isinstance(m, nn.Linear):
+    """Custom weight init"""
+    if isinstance(m, nn.Linear):
         nn.init.xavier_normal_(m.weight)
         if m.bias is not None:
             nn.init.constant_(m.bias, 0)
     elif isinstance(m, nn.LayerNorm):
         nn.init.constant_(m.weight, 1.0)
         nn.init.constant_(m.bias, 0.0)
-    elif isinstance(m, nn.BatchNorm3d):
+    elif isinstance(m, spconv.SubMConv3d):
+        nn.init.xavier_normal_(m.weight)
+        if m.bias is not None:
+            nn.init.constant_(m.bias, 0)
+    elif isinstance(m, spconv.SparseConv3d):
+        nn.init.xavier_normal_(m.weight)
+        if m.bias is not None:
+            nn.init.constant_(m.bias, 0)
+    elif isinstance(m, nn.BatchNorm1d):
+        nn.init.constant_(m.bias, 0)
         nn.init.constant_(m.weight, 1.0)
-        nn.init.constant_(m.bias, 0.0)
+    elif isinstance(m, nn.LSTM):
+        for name, param in m.named_parameters():
+            if 'weight_ih' in name:
+                nn.init.xavier_uniform_(param.data)
+            elif 'weight_hh' in name:
+                nn.init.orthogonal_(param.data)
+            elif 'bias' in name:
+                nn.init.constant_(param.data, 0)
 
 
 class Actor(nn.Module):
     """Actor network."""
     def __init__(
-        self, num_point_features, grid_size, encoder_feature_dim, direction_state_shape, action_shape, hidden_dim, log_std_min, log_std_max
+        self, num_point_features, grid_size, encoder_feature_dim, batch_size, frame_stack, direction_state_shape, action_shape, hidden_dim, log_std_min, log_std_max
     ):
         super().__init__()
-
-        self.encoder = LidarEncoder(num_point_features, encoder_feature_dim)
-
-        self.log_std_min = log_std_min
-        self.log_std_max = log_std_max
-
+        self.vfe = MeanVFE()
+        self.encoder = LidarEncoder(num_point_features, grid_size, encoder_feature_dim, batch_size, frame_stack)
         self.trunk = nn.Sequential(
-            nn.Linear(self.encoder.feature_dim + direction_state_shape[0], hidden_dim), nn.ReLU(),
+            nn.Linear(encoder_feature_dim + direction_state_shape[0], hidden_dim), nn.ReLU(),
             nn.Linear(hidden_dim, hidden_dim), nn.ReLU(),
             nn.Linear(hidden_dim, 2 * action_shape[0])
         )
 
+        self.log_std_min = log_std_min
+        self.log_std_max = log_std_max
         self.outputs = dict()
         self.apply(weight_init)
 
     def forward(
-        self, voxels, direction_states, compute_pi=True, compute_log_pi=True, detach_encoder=False
+        self, voxels, voxel_coordinates, voxel_numpoints, direction_states, compute_pi=True, compute_log_pi=True, detach_encoder=False, downstream=False
     ):
-        if detach_encoder:
-            with torch.no_grad():
-                encoder_out = self.encoder(voxels)
+        if downstream:
+            voxel_features = self.vfe(voxels, voxel_numpoints)
+            encoder_out = self.encoder(voxel_features, voxel_coordinates, downstream=downstream)
         else:
-            encoder_out = self.encoder(voxels)
+            if detach_encoder:
+                with torch.no_grad():
+                    voxel_features = self.vfe(voxels, voxel_numpoints)
+                    encoder_out = self.encoder(voxel_features, voxel_coordinates)
+            else:
+                voxel_features = self.vfe(voxels, voxel_numpoints)
+                encoder_out = self.encoder(voxel_features, voxel_coordinates)
 
         obs = torch.cat([encoder_out, direction_states], dim=1)
 
@@ -121,7 +138,6 @@ class QFunction(nn.Module):
     """MLP for q-function."""
     def __init__(self, encoder_feature_dim, direction_state_dim, action_dim, hidden_dim):
         super().__init__()
-
         self.trunk = nn.Sequential(
             nn.Linear(encoder_feature_dim + direction_state_dim + action_dim, hidden_dim), nn.ReLU(),
             nn.Linear(hidden_dim, hidden_dim), nn.ReLU(),
@@ -137,29 +153,29 @@ class QFunction(nn.Module):
 class Critic(nn.Module):
     """Critic network."""
     def __init__(
-        self, num_point_features, grid_size, encoder_feature_dim, direction_state_shape, action_shape, hidden_dim
+        self, num_point_features, grid_size, encoder_feature_dim, batch_size, frame_stack, direction_state_dim, action_shape, hidden_dim
     ):
         super().__init__()
-
         self.vfe = MeanVFE()
-        self.encoder = LidarEncoder(num_point_features, encoder_feature_dim)
-
+        self.encoder = LidarEncoder(num_point_features, grid_size, encoder_feature_dim, batch_size, frame_stack)
         self.Q1 = QFunction(
-            self.encoder.feature_dim, direction_state_shape[0], action_shape[0], hidden_dim
+            encoder_feature_dim, direction_state_dim[0], action_shape[0], hidden_dim
         )
         self.Q2 = QFunction(
-            self.encoder.feature_dim, direction_state_shape[0], action_shape[0], hidden_dim
+            encoder_feature_dim, direction_state_dim[0], action_shape[0], hidden_dim
         )
 
         self.outputs = dict()
         self.apply(weight_init)
 
-    def forward(self, voxels, direction_states, action, detach_encoder=False):
+    def forward(self, voxels, voxel_coordinates, voxel_numpoints, direction_states, action, detach_encoder=False):
         if detach_encoder:
             with torch.no_grad():
-                encoder_out = self.encoder(voxels)
+                voxel_features = self.vfe(voxels, voxel_numpoints)
+                encoder_out = self.encoder(voxel_features, voxel_coordinates)
         else:
-            encoder_out = self.encoder(voxels)
+            voxel_features = self.vfe(voxels, voxel_numpoints)
+            encoder_out = self.encoder(voxel_features, voxel_coordinates)
 
         q1 = self.Q1(encoder_out, direction_states, action)
         q2 = self.Q2(encoder_out, direction_states, action)
@@ -180,18 +196,16 @@ class Critic(nn.Module):
             L.log_param('train_critic/q2_fc%d' % i, self.Q2.trunk[i * 2], step)
 
 
-class MAE(nn.Module):
-    """MAE"""
-    def __init__(self, critic, mask_ratio, num_point_features, grid_size, batch_size, device):
+class MAELearning(nn.Module):
+    def __init__(self, critic, mask_ratio, grid_size, encoder_feature_dim, batch_size, frame_stack):
         super().__init__()
-        self.num_point_features = num_point_features
-        self.batch_size = batch_size
-        self.voxels_shape = grid_size[::-1] + [1, 0, 0]
-        self.mask_ratio = mask_ratio
-        self.device = device
-
+        self.vfe = MeanVFE()
         self.encoder = critic.encoder
-        self.decoder = LidarDecoder(self.encoder.feature_dim)
+        self.decoder = LidarDecoder(encoder_feature_dim, batch_size)
+        self.mask_ratio = mask_ratio
+        self.sparse_shape = grid_size[::-1] + [1, 0, 0]
+        self.batch_size = batch_size
+        self.frame_stack = frame_stack
 
         self.criterion = nn.BCEWithLogitsLoss()
         self.apply(weight_init)
@@ -200,21 +214,48 @@ class MAE(nn.Module):
         loss = self.criterion(pred, target)
         return loss
 
-    def forward(self, voxels):
-        # start_time = time.time()
-        mask = torch.rand(self.batch_size, self.num_point_features, self.voxels_shape[0], self.voxels_shape[1], self.voxels_shape[2], device=self.device) < self.mask_ratio
-        
-        masked_voxels = voxels.clone()
-        masked_voxels[mask] = 0
-        
-        encoder_out = self.encoder(masked_voxels)
-        decoder_out = self.decoder(encoder_out)
+    def forward(self, voxels, coordinates, numpoints):
+        voxel_features = self.vfe(voxels, numpoints)
 
-        pred = decoder_out
-        target = voxels
+        # range-aware ramdom masking
+        select_ratio = 1 - self.mask_ratio
+        voxels_distance = (voxel_features[:,0]**2 + voxel_features[:,1]**2)**0.5
 
-        # execution_time = time.time() - start_time
-        # print(f"Code executed in: {execution_time} seconds")
+        select_0to2 = voxels_distance[:]<=2
+        select_2to4 = (voxels_distance[:]>2) & (voxels_distance[:]<=4)
+        select_4to5 = voxels_distance[:]>4
+
+        id_list_select_0to2 = torch.argwhere(select_0to2==True).reshape(torch.argwhere(select_0to2==True).shape[0])
+        id_list_select_2to4 = torch.argwhere(select_2to4==True).reshape(torch.argwhere(select_2to4==True).shape[0])
+        id_list_select_4to5 = torch.argwhere(select_4to5==True).reshape(torch.argwhere(select_4to5==True).shape[0])
+
+        shuffle_id_list_select_0to2 = id_list_select_0to2[torch.randperm(id_list_select_0to2.size(0))]
+        shuffle_id_list_select_2to4 = id_list_select_2to4[torch.randperm(id_list_select_2to4.size(0))]
+        shuffle_id_list_select_4to5 = id_list_select_4to5[torch.randperm(id_list_select_4to5.size(0))]
+        
+        select_index = torch.cat((shuffle_id_list_select_0to2[:int(select_ratio*len(shuffle_id_list_select_0to2))], 
+                                 shuffle_id_list_select_2to4[:int((select_ratio+0.2)*len(shuffle_id_list_select_2to4))], 
+                                 shuffle_id_list_select_4to5[:int((select_ratio+0.2)*len(shuffle_id_list_select_4to5))]
+        ), 0)
+
+        voxel_features_partial, voxel_coords_partial = voxel_features[select_index,:], coordinates[select_index,:]
+
+        encoder_out = self.encoder(voxel_features_partial, voxel_coords_partial)
+        voxels_occ_pred = self.decoder(encoder_out)
+
+        nums = voxel_features.shape[0]
+        voxel_features_all_one = torch.ones(nums,1).to(voxel_features.device)
+        input_sp_tensor_ones = spconv.SparseConvTensor(
+            features=voxel_features_all_one,
+            indices=coordinates.int(),
+            spatial_shape=self.sparse_shape,
+            batch_size=self.batch_size*self.frame_stack
+        )
+        voxels_occ_unsqueezed = input_sp_tensor_ones.dense()
+        voxels_occ = voxels_occ_unsqueezed.view(self.batch_size, self.frame_stack, 26 , 250, 250)
+        
+        pred = voxels_occ_pred
+        target = voxels_occ
         return pred, target
 
 
@@ -225,6 +266,7 @@ class MAESacAgent(object):
         num_point_features,
         grid_size,
         batch_size,
+        frame_stack,
         direction_state_shape,
         action_shape,
         device,
@@ -246,8 +288,6 @@ class MAESacAgent(object):
         encoder_lr=1e-3,
         encoder_tau=0.05,
         encoder_feature_dim=75,
-        encoder_target_update_freq=2,
-        head_hidden_dim=200,
         mask_ratio=0.8,
         mae_update_freq=1,
         mae_cutoff_step=50000,
@@ -261,21 +301,18 @@ class MAESacAgent(object):
         self.encoder_tau = encoder_tau
         self.actor_update_freq = actor_update_freq
         self.critic_target_update_freq = critic_target_update_freq
-        self.encoder_target_update_freq = encoder_target_update_freq
         self.mae_update_freq = mae_update_freq
         self.log_interval = log_interval
-        self.num_point_features = num_point_features
         self.detach_encoder = detach_encoder
         self.mae_cutoff_step = mae_cutoff_step
-        self.voxels_shape = grid_size[::-1] + [1, 0, 0]
 
-        self.actor = Actor(num_point_features, grid_size, encoder_feature_dim, direction_state_shape, action_shape, hidden_dim, actor_log_std_min, actor_log_std_max
+        self.actor = Actor(num_point_features, grid_size, encoder_feature_dim, batch_size, frame_stack, direction_state_shape, action_shape, hidden_dim, actor_log_std_min, actor_log_std_max
         ).to(device)
 
-        self.critic = Critic(num_point_features, grid_size, encoder_feature_dim, direction_state_shape, action_shape, hidden_dim
+        self.critic = Critic(num_point_features, grid_size, encoder_feature_dim, batch_size, frame_stack, direction_state_shape, action_shape, hidden_dim
         ).to(device)
 
-        self.critic_target = Critic(num_point_features, grid_size, encoder_feature_dim, direction_state_shape, action_shape, hidden_dim
+        self.critic_target = Critic(num_point_features, grid_size, encoder_feature_dim, batch_size, frame_stack, direction_state_shape, action_shape, hidden_dim
         ).to(device)
 
         self.critic_target.load_state_dict(self.critic.state_dict())
@@ -301,10 +338,10 @@ class MAESacAgent(object):
             [self.log_alpha], lr=alpha_lr, betas=(alpha_beta, 0.999)
         )
 
-        self.MAE = MAE(self.critic, mask_ratio, num_point_features, grid_size, batch_size, device).to(self.device)
+        self.MAELearning = MAELearning(self.critic, mask_ratio, grid_size, encoder_feature_dim, batch_size, frame_stack).to(self.device)
         
         self.mae_optimizer = torch.optim.Adam(
-            self.MAE.parameters(), lr=encoder_lr
+            self.MAELearning.parameters(), lr=encoder_lr
         )
 
         self.train()
@@ -314,44 +351,44 @@ class MAESacAgent(object):
         self.training = training
         self.actor.train(training)
         self.critic.train(training)
-        self.MAE.train(training)
+        self.MAELearning.train(training)
 
     @property
     def alpha(self):
         return self.log_alpha.exp()
 
-    def select_action(self, voxelizer, obs_sensor, obs_direction):
+    def select_action(self, obs_sensor, obs_direction, processfunc):
         with torch.no_grad():
-            obs_voxels = voxelizer(obs_sensor)
-            obs_voxels_squeezed = obs_voxels.view(self.num_point_features, self.voxels_shape[0], self.voxels_shape[1], self.voxels_shape[2])
-            obs_direction_tsr = torch.as_tensor(obs_direction, device=self.device)
-            obs_voxels_batched = obs_voxels_squeezed.unsqueeze(0)
-            obs_direction_tsr = obs_direction_tsr.unsqueeze(0)
-
-            mu, pi, _, _ = self.actor(obs_voxels_batched, obs_direction_tsr, compute_log_pi=False)
+            voxels, coordinates, numpoints = processfunc(obs_sensor)
+            voxels = torch.as_tensor(voxels, device=self.device)
+            coordinates = torch.as_tensor(coordinates, device=self.device)
+            numpoints = torch.as_tensor(numpoints, device=self.device)
+            obs_direction = torch.as_tensor(obs_direction, device=self.device)
+            obs_direction = obs_direction.unsqueeze(0)
+            mu, _, _, _ = self.actor(voxels, coordinates, numpoints, obs_direction, compute_pi=False, compute_log_pi=False, downstream=True)
             return mu.cpu().data.numpy().flatten()
 
-    def sample_action(self, voxelizer, obs_sensor, obs_direction):
+    def sample_action(self, obs_sensor, obs_direction, processfunc):
         with torch.no_grad():
-            obs_voxels = voxelizer(obs_sensor)
-            obs_voxels_squeezed = obs_voxels.view(self.num_point_features, self.voxels_shape[0], self.voxels_shape[1], self.voxels_shape[2])
-            obs_direction_tsr = torch.as_tensor(obs_direction, device=self.device)
-            obs_voxels_batched = obs_voxels_squeezed.unsqueeze(0)
-            obs_direction_tsr = obs_direction_tsr.unsqueeze(0)
-
-            mu, pi, _, _ = self.actor(obs_voxels_batched, obs_direction_tsr, compute_log_pi=False)
+            voxels, coordinates, numpoints = processfunc(obs_sensor)
+            voxels = torch.as_tensor(voxels, device=self.device)
+            coordinates = torch.as_tensor(coordinates, device=self.device)
+            numpoints = torch.as_tensor(numpoints, device=self.device)
+            obs_direction = torch.as_tensor(obs_direction, device=self.device)
+            obs_direction = obs_direction.unsqueeze(0)
+            mu, pi, _, _ = self.actor(voxels, coordinates, numpoints, obs_direction, compute_log_pi=False, downstream=True)
             return pi.cpu().data.numpy().flatten()
 
-    def update_critic(self, voxels, directions, action, reward, next_voxels, next_directions, not_done, L, step):
+    def update_critic(self, voxels, coordinates, numpoints, directions, action, reward, next_voxels, next_coordinates, next_numpoints, next_directions, not_done, L, step):
         with torch.no_grad():
-            _, policy_action, log_pi, _ = self.actor(next_voxels, next_directions)
-            target_Q1, target_Q2 = self.critic_target(next_voxels, next_directions, policy_action)
+            _, policy_action, log_pi, _ = self.actor(next_voxels, next_coordinates, next_numpoints, next_directions)
+            target_Q1, target_Q2 = self.critic_target(next_voxels, next_coordinates, next_numpoints, next_directions, policy_action)
             target_V = torch.min(target_Q1,
                                  target_Q2) - self.alpha.detach() * log_pi
             target_Q = reward + (not_done * self.discount * target_V)
 
         current_Q1, current_Q2 = self.critic(
-            voxels, directions, action, detach_encoder=self.detach_encoder)
+            voxels, coordinates, numpoints, directions, action, detach_encoder=self.detach_encoder)
         critic_loss = F.mse_loss(current_Q1,
                                  target_Q) + F.mse_loss(current_Q2, target_Q)
         
@@ -363,10 +400,10 @@ class MAESacAgent(object):
         self.critic_optimizer.step()
         self.critic.log(L, step)
 
-    def update_actor_and_alpha(self, voxels, directions, L, step):
+    def update_actor_and_alpha(self, voxels, coordinates, numpoints, directions, L, step):
         # detach encoder, so we don't update it with the actor loss
-        _, pi, log_pi, log_std = self.actor(voxels, directions, detach_encoder=False)
-        actor_Q1, actor_Q2 = self.critic(voxels, directions, pi, detach_encoder=False)
+        _, pi, log_pi, log_std = self.actor(voxels, coordinates, numpoints, directions, detach_encoder=False)
+        actor_Q1, actor_Q2 = self.critic(voxels, coordinates, numpoints, directions, pi, detach_encoder=False)
 
         actor_Q = torch.min(actor_Q1, actor_Q2)
         actor_loss = (self.alpha.detach() * log_pi - actor_Q).mean()
@@ -393,9 +430,9 @@ class MAESacAgent(object):
         alpha_loss.backward()
         self.log_alpha_optimizer.step()
 
-    def update_mae(self, voxels, L, step):
-        pred, target = self.MAE(voxels)
-        loss = self.MAE.occupancy_loss(pred, target)
+    def update_mae(self, voxels, coordinates, numpoints, L, step):
+        pred, target = self.MAELearning(voxels, coordinates, numpoints)
+        loss = self.MAELearning.occupancy_loss(pred, target)
         self.mae_optimizer.zero_grad()
         loss.backward()
         self.mae_optimizer.step()
@@ -403,21 +440,22 @@ class MAESacAgent(object):
            L.log('train/rec_loss', loss.item(), step)
 
     def update(self, replay_buffer, L, step, only_mae=False):
-        voxels, directions, \
+        voxels, coordinates, numpoints, directions, \
         actions, rewards, \
-        next_voxels, next_directions, not_done \
-        = replay_buffer.sample_voxels()
+        next_voxels, next_coordinates, next_numpoints, next_directions, not_done \
+        = replay_buffer.sample_voxel()
 
         if not only_mae:
             if step % self.log_interval == 0:
                 L.log('train/batch_reward', rewards.mean(), step)
 
-            self.update_critic(voxels, directions, actions, rewards, \
-                                next_voxels, next_directions, \
+            self.update_critic(voxels, coordinates, numpoints, directions, \
+                                actions, rewards, \
+                                next_voxels, next_coordinates, next_numpoints, next_directions, \
                                 not_done, L, step)
 
             if step % self.actor_update_freq == 0:
-                self.update_actor_and_alpha(voxels, directions, L, step)
+                self.update_actor_and_alpha(voxels, coordinates, numpoints, directions, L, step)
 
             if step % self.critic_target_update_freq == 0:
                 soft_update_params(self.critic.Q1, self.critic_target.Q1,
@@ -427,34 +465,34 @@ class MAESacAgent(object):
                 soft_update_params(self.critic.encoder, self.critic_target.encoder,
                                     self.critic_encoder_tau)
 
-        if step < self.mae_cutoff_step and step % self.mae_update_freq == 0:
-            self.update_mae(voxels, L, step)
+        # if step < self.mae_cutoff_step and step % self.mae_update_freq == 0:
+        #     self.update_mae(voxels, coordinates, numpoints, L, step)
 
     def save(self, model_dir, step):
         torch.save(
             self.actor.state_dict(), '%s/actor_%s.pt' % (model_dir, step)
         )
-        # torch.save(
-        #     self.critic.state_dict(), '%s/critic_%s.pt' % (model_dir, step)
-        # )
-        # torch.save(
-        #     self.critic_target.state_dict(), '%s/critic_%s.pt' % (model_dir, step)
-        # )
-        # torch.save(
-        #     self.MAE.state_dict(), '%s/mae_%s.pt' % (model_dir, step)
-        # )
-        # torch.save(
-        #     self.actor_optimizer.state_dict(), '%s/actor_adam_%s.pt' % (model_dir, step)
-        # )
-        # torch.save(
-        #     self.critic_optimizer.state_dict(), '%s/critic_adam_%s.pt' % (model_dir, step)
-        # )
-        # torch.save(
-        #     self.log_alpha_optimizer.state_dict(), '%s/log_alpha_adam_%s.pt' % (model_dir, step)
-        # )
-        # torch.save(
-        #     self.mae_optimizer.state_dict(), '%s/mae_adam_%s.pt' % (model_dir, step)
-        # )
+        torch.save(
+            self.critic.state_dict(), '%s/critic_%s.pt' % (model_dir, step)
+        )
+        torch.save(
+            self.critic_target.state_dict(), '%s/critic_%s.pt' % (model_dir, step)
+        )
+        torch.save(
+            self.MAELearning.state_dict(), '%s/mae_%s.pt' % (model_dir, step)
+        )
+        torch.save(
+            self.actor_optimizer.state_dict(), '%s/actor_adam_%s.pt' % (model_dir, step)
+        )
+        torch.save(
+            self.critic_optimizer.state_dict(), '%s/critic_adam_%s.pt' % (model_dir, step)
+        )
+        torch.save(
+            self.log_alpha_optimizer.state_dict(), '%s/log_alpha_adam_%s.pt' % (model_dir, step)
+        )
+        torch.save(
+            self.mae_optimizer.state_dict(), '%s/mae_adam_%s.pt' % (model_dir, step)
+        )
 
     def load(self, model_dir, step):
         self.actor.load_state_dict(
@@ -466,7 +504,7 @@ class MAESacAgent(object):
         self.critic_target.load_state_dict(
             torch.load('%s/critic_%s.pt' % (model_dir, step))
         )
-        self.MAE.load_state_dict(
+        self.MAELearning.load_state_dict(
             torch.load('%s/mae_%s.pt' % (model_dir, step))
         )
         self.actor_optimizer.state_dict(

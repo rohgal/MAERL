@@ -319,7 +319,7 @@ class GazeboEnv:
             return np.float32(-5.0)
         else:
             safety = lambda x: 0.5 - x if x < 0.5 else 0.0
-            return -5/800 + 0.5*(dist_prev - dist_curr) - 0.1*safety(min_laser)
+            return -5/800 + 0.5*(dist_prev - dist_curr)
         
     @staticmethod
     def calculate_polar_goal(odom_x, odom_y, goal_x, goal_y, angle):
