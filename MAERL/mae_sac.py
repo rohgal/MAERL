@@ -465,8 +465,8 @@ class MAESacAgent(object):
                 soft_update_params(self.critic.encoder, self.critic_target.encoder,
                                     self.critic_encoder_tau)
 
-        # if step < self.mae_cutoff_step and step % self.mae_update_freq == 0:
-        #     self.update_mae(voxels, coordinates, numpoints, L, step)
+        if step < self.mae_cutoff_step and step % self.mae_update_freq == 0:
+            self.update_mae(voxels, coordinates, numpoints, L, step)
 
     def save(self, model_dir, step):
         torch.save(
