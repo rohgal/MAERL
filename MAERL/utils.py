@@ -159,9 +159,9 @@ class ReplayBuffer(Dataset):
         self.transform = transform
 
         self.obses_sensor = []
-        self.obses_direction = np.empty((capacity, 2), dtype=np.float32)
+        self.obses_direction = np.empty((capacity, 4), dtype=np.float32)
         self.next_obses_sensor = []
-        self.next_obses_direction = np.empty((capacity, 2), dtype=np.float32)
+        self.next_obses_direction = np.empty((capacity, 4), dtype=np.float32)
         self.actions = np.empty((capacity, *action_shape), dtype=np.float16)
         self.rewards = np.empty((capacity, 1), dtype=np.float16)
         self.not_dones = np.empty((capacity, 1), dtype=np.float16)

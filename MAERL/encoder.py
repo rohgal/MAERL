@@ -56,7 +56,7 @@ class LidarEncoder(nn.Module):
         self.frame_stack = frame_stack
         self.encoder_feature_dim = encoder_feature_dim
 
-        norm_fn = partial(nn.BatchNorm1d, eps=1e-3, momentum=0.01)
+        norm_fn = partial(nn.BatchNorm1d, momentum=0.99)
 
         self.last_pad = 0
 
@@ -98,9 +98,9 @@ class LidarEncoder(nn.Module):
         )
 
         self.fc1 = nn.Linear(98304, encoder_feature_dim)
-        self.ln1 = nn.LayerNorm(encoder_feature_dim)
         self.lstm = nn.LSTM(encoder_feature_dim, 128, 2, batch_first=True)
         self.fc2 = nn.Linear(128, encoder_feature_dim)
+        self.br1 = nn.BatchNorm1d(encoder_feature_dim, momentum=0.99)
 
     def forward(self, voxel_features, voxel_coordinates, downstream=False):
         if downstream:
@@ -128,12 +128,12 @@ class LidarEncoder(nn.Module):
 
         h = out_dense.view(-1, 98304)
         h_fc = self.fc1(h)
-        h_norm = self.ln1(h_fc)
 
-        g = h_norm.view(-1, self.frame_stack, self.encoder_feature_dim)
+        g = h_fc.view(-1, self.frame_stack, self.encoder_feature_dim)
         g_lstm, _ = self.lstm(g)
         g_fc = self.fc2(g_lstm[:, -1, :])
-        return g_fc
+        g_norm = self.br1(g_fc)
+        return g_norm
 
     # def copy_conv_weights_from(self, source):
     #     tie_weights(src=source.conv_input, trg=self.conv_input)
@@ -150,8 +150,11 @@ class LidarDecoder(nn.Module):
     def __init__(self, encoder_feature_dim, batch_size):
         super().__init__()
         self.batch_size = batch_size
-        self.fc = nn.Linear(encoder_feature_dim, 98304)
-        self.ln = nn.LayerNorm(98304)
+        self.trunk = nn.Sequential(
+            nn.Linear(encoder_feature_dim, 98304),
+            nn.BatchNorm1d(98304, momentum=0.99),
+            nn.ReLU()
+        )
         self.deconv1 = nn.Sequential(
             nn.ConvTranspose3d(96, 48, 3, padding=(0,1,1), stride=2, bias=False),
             nn.BatchNorm3d(48),
@@ -167,8 +170,7 @@ class LidarDecoder(nn.Module):
         )
 
     def forward(self, encoder_out):
-        x_fc = self.fc(encoder_out)
-        x_norm = self.ln(x_fc)
+        x_norm = self.trunk(encoder_out)
 
         h = x_norm.view(self.batch_size, 96, 1, 32, 32)
         

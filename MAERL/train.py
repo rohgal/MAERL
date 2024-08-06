@@ -31,10 +31,10 @@ def parse_args():
     parser.add_argument('--num_train_steps', default=1000000, type=int)
     parser.add_argument('--batch_size', default=4, type=int)
     parser.add_argument('--detach_encoder', default=False, action='store_true')
-    parser.add_argument('--hidden_dim', default=1024, type=int)
+    parser.add_argument('--hidden_dim', default=2048, type=int)
     # critic
     parser.add_argument('--critic_lr', default=1e-4, type=float)
-    parser.add_argument('--critic_beta', default=0.9, type=float)
+    parser.add_argument('--critic_beta', default=0.5, type=float)
     parser.add_argument('--critic_tau', default=0.01, type=float)
     parser.add_argument('--critic_encoder_tau', default=0.05, type=float)
     parser.add_argument('--critic_target_update_freq', default=2, type=int) # try to change it to 1 and retain 0.01 above
@@ -213,8 +213,8 @@ def main():
         # sample action for data collection
         if step < args.init_steps:
             action = env.action_space.sample()
-            # if step > args.batch_size:
-            #     agent.update(replay_buffer, L, step, only_mae=True)
+            if step > args.batch_size:
+                agent.update(replay_buffer, L, step)
         else:
             with utils.eval_mode(agent):
                 action = agent.sample_action(obs_sensor, obs_direction, processfunc=replay_buffer.batched_points_to_voxels)

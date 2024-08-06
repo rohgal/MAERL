@@ -28,7 +28,7 @@ TIME_DELTA = 0.1
 
 class GazeboEnv:
     def __init__(self, launchfile):
-        self.direction_state_shape = (2,)
+        self.direction_state_shape = (4,)
         self.action_space = gym.spaces.Box(low=np.array([-1.0, -1.0]),
                                 high=np.array([1.0, 1.0]),
                                 dtype=np.float32)
@@ -111,7 +111,7 @@ class GazeboEnv:
             theta, distance = self.calculate_polar_goal(self.robot_x, self.robot_y, self.goal_x, self.goal_y, self.robot_yaw)
             self.distance_history.extend([distance] * 4)
 
-            direction_state = np.array([distance, theta], dtype=np.float32)
+            direction_state = np.array([distance, theta, 0.0, 0.0], dtype=np.float32)
             return laser_state, direction_state
         else:
             self.episode_step = 0
@@ -125,7 +125,7 @@ class GazeboEnv:
             theta, distance = self.calculate_polar_goal(self.robot_x, self.robot_y, self.goal_x, self.goal_y, self.robot_yaw)
             self.distance_history.extend([distance] * 4)
 
-            direction_state = np.array([distance, theta], dtype=np.float32)
+            direction_state = np.array([distance, theta, 0.0, 0.0], dtype=np.float32)
             return laser_state, direction_state
 
     def step(self, action):
@@ -152,7 +152,7 @@ class GazeboEnv:
         else:
             done_reason = None
 
-        direction_state = np.array([dist_curr, theta], dtype=np.float32)
+        direction_state = np.array([dist_curr, theta, action[0], action[1]], dtype=np.float32)
         self.episode_step+=1
         return laser_state, direction_state, reward, done, done_reason
 
@@ -318,7 +318,7 @@ class GazeboEnv:
         elif collision or timeout:
             return np.float32(-5.0)
         else:
-            safety = lambda x: 0.5 - x if x < 0.5 else 0.0
+            # safety = lambda x: 0.5 - x if x < 0.5 else 0.0
             return -5/800 + 0.5*(dist_prev - dist_curr)
         
     @staticmethod
