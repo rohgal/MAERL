@@ -101,10 +101,13 @@ class LidarEncoder(nn.Module):
         self.fc1 = nn.Linear(98304, hidden_dim)
         self.br1 = nn.BatchNorm1d(hidden_dim, momentum=0.99)
         self.ac1 = nn.ReLU()
-        self.lstm = nn.LSTM(hidden_dim, 256, 2, batch_first=True)
-        self.fc2 = nn.Linear(256, encoder_feature_dim)
-        self.br2 = nn.BatchNorm1d(encoder_feature_dim, momentum=0.99)
+        self.fc2 = nn.Linear(hidden_dim, 256)
+        self.br2 = nn.BatchNorm1d(256, momentum=0.99)
         self.ac2 = nn.ReLU()
+        self.lstm = nn.LSTM(256, 256, 2, batch_first=True)
+        self.fc3 = nn.Linear(256, encoder_feature_dim)
+        self.br3 = nn.BatchNorm1d(encoder_feature_dim, momentum=0.99)
+        self.ac3 = nn.ReLU()
 
     def forward(self, voxel_features, voxel_coordinates, downstream=False):
         if downstream:
@@ -135,11 +138,15 @@ class LidarEncoder(nn.Module):
         h_norm = self.br1(h_fc)
         h_ac = self.ac1(h_norm)
 
-        g = h_ac.view(-1, self.frame_stack, self.hidden_dim)
+        f_fc = self.fc2(h_ac)
+        f_norm = self.br2(f_fc)
+        f_ac = self.ac2(f_norm)
+
+        g = f_ac.view(-1, self.frame_stack, 256)
         g_lstm, _ = self.lstm(g)
-        g_fc = self.fc2(g_lstm[:, -1, :])
-        g_norm = self.br2(g_fc)
-        g_ac = self.ac2(g_norm)
+        g_fc = self.fc3(g_lstm[:, -1, :])
+        g_norm = self.br3(g_fc)
+        g_ac = self.ac3(g_norm)
         return g_norm
 
     # def copy_conv_weights_from(self, source):
