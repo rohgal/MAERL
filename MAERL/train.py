@@ -27,7 +27,7 @@ def parse_args():
     parser.add_argument('--replay_buffer_capacity', default=100000, type=int)
     # train
     parser.add_argument('--agent', default='mae_sac', type=str)
-    parser.add_argument('--init_steps', default=10000, type=int)
+    parser.add_argument('--init_steps', default=10, type=int)
     parser.add_argument('--num_train_steps', default=1000000, type=int)
     parser.add_argument('--batch_size', default=4, type=int)
     parser.add_argument('--detach_encoder', default=False, action='store_true')

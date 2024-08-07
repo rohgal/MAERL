@@ -49,11 +49,12 @@ def post_act_block(in_channels, out_channels, kernel_size, indice_key=None, stri
 
 
 class LidarEncoder(nn.Module):
-    def __init__(self, num_point_features, grid_size, encoder_feature_dim, batch_size, frame_stack):
+    def __init__(self, num_point_features, grid_size, hidden_dim, encoder_feature_dim, batch_size, frame_stack):
         super().__init__()
         self.sparse_shape = grid_size[::-1] + [1, 0, 0]
         self.batch_size = batch_size
         self.frame_stack = frame_stack
+        self.hidden_dim = hidden_dim
         self.encoder_feature_dim = encoder_feature_dim
 
         norm_fn = partial(nn.BatchNorm1d, momentum=0.99)
@@ -97,10 +98,13 @@ class LidarEncoder(nn.Module):
             nn.ReLU(),
         )
 
-        self.fc1 = nn.Linear(98304, encoder_feature_dim)
-        self.lstm = nn.LSTM(encoder_feature_dim, 128, 2, batch_first=True)
-        self.fc2 = nn.Linear(128, encoder_feature_dim)
-        self.br1 = nn.BatchNorm1d(encoder_feature_dim, momentum=0.99)
+        self.fc1 = nn.Linear(98304, hidden_dim)
+        self.br1 = nn.BatchNorm1d(hidden_dim, momentum=0.99)
+        self.ac1 = nn.ReLU()
+        self.lstm = nn.LSTM(hidden_dim, 256, 2, batch_first=True)
+        self.fc2 = nn.Linear(256, encoder_feature_dim)
+        self.br2 = nn.BatchNorm1d(encoder_feature_dim, momentum=0.99)
+        self.ac2 = nn.ReLU()
 
     def forward(self, voxel_features, voxel_coordinates, downstream=False):
         if downstream:
@@ -128,11 +132,14 @@ class LidarEncoder(nn.Module):
 
         h = out_dense.view(-1, 98304)
         h_fc = self.fc1(h)
+        h_norm = self.br1(h_fc)
+        h_ac = self.ac1(h_norm)
 
-        g = h_fc.view(-1, self.frame_stack, self.encoder_feature_dim)
+        g = h_ac.view(-1, self.frame_stack, self.hidden_dim)
         g_lstm, _ = self.lstm(g)
         g_fc = self.fc2(g_lstm[:, -1, :])
-        g_norm = self.br1(g_fc)
+        g_norm = self.br2(g_fc)
+        g_ac = self.ac2(g_norm)
         return g_norm
 
     # def copy_conv_weights_from(self, source):
@@ -157,12 +164,12 @@ class LidarDecoder(nn.Module):
         )
         self.deconv1 = nn.Sequential(
             nn.ConvTranspose3d(96, 48, 3, padding=(0,1,1), stride=2, bias=False),
-            nn.BatchNorm3d(48),
+            nn.BatchNorm3d(48, momentum=0.99),
             nn.ReLU()
         )
         self.deconv2 = nn.Sequential(
             nn.ConvTranspose3d(48, 16, 3, padding=(0,1,1), stride=(3,2,2), bias=False),
-            nn.BatchNorm3d(16),
+            nn.BatchNorm3d(16, momentum=0.99),
             nn.ReLU()
         )
         self.deconv3 = nn.Sequential(

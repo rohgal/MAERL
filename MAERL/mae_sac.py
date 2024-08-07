@@ -62,10 +62,10 @@ class Actor(nn.Module):
     ):
         super().__init__()
         self.vfe = MeanVFE()
-        self.encoder = LidarEncoder(num_point_features, grid_size, encoder_feature_dim, batch_size, frame_stack)
+        self.encoder = LidarEncoder(num_point_features, grid_size, hidden_dim, encoder_feature_dim, batch_size, frame_stack)
         self.trunk = nn.Sequential(
-            nn.Linear(encoder_feature_dim + direction_state_shape[0], hidden_dim), nn.ReLU(),
-            nn.Linear(hidden_dim, hidden_dim), nn.ReLU(),
+            nn.Linear(encoder_feature_dim + direction_state_shape[0], hidden_dim), nn.BatchNorm1d(hidden_dim, momentum=0.99), nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim), nn.BatchNorm1d(hidden_dim, momentum=0.99), nn.ReLU(),
             nn.Linear(hidden_dim, 2 * action_shape[0])
         )
 
@@ -136,8 +136,8 @@ class QFunction(nn.Module):
     def __init__(self, encoder_feature_dim, direction_state_dim, action_dim, hidden_dim):
         super().__init__()
         self.trunk = nn.Sequential(
-            nn.Linear(encoder_feature_dim + direction_state_dim + action_dim, hidden_dim), nn.ReLU(),
-            nn.Linear(hidden_dim, hidden_dim), nn.ReLU(),
+            nn.Linear(encoder_feature_dim + direction_state_dim + action_dim, hidden_dim), nn.BatchNorm1d(hidden_dim, momentum=0.99), nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim), nn.BatchNorm1d(hidden_dim, momentum=0.99), nn.ReLU(),
             nn.Linear(hidden_dim, 1)
         )
 
@@ -154,7 +154,7 @@ class Critic(nn.Module):
     ):
         super().__init__()
         self.vfe = MeanVFE()
-        self.encoder = LidarEncoder(num_point_features, grid_size, encoder_feature_dim, batch_size, frame_stack)
+        self.encoder = LidarEncoder(num_point_features, grid_size, hidden_dim, encoder_feature_dim, batch_size, frame_stack)
         self.Q1 = QFunction(
             encoder_feature_dim, direction_state_dim[0], action_shape[0], hidden_dim
         )
