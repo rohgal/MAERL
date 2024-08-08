@@ -94,7 +94,7 @@ class LidarEncoder(nn.Module):
             nn.ReLU(),
         )
 
-        self.fc1 = nn.Linear(22861440, encoder_feature_dim)
+        self.fc1 = nn.Linear(98304, encoder_feature_dim)
         self.lstm = nn.LSTM(encoder_feature_dim, 128, 2, batch_first=True)
         self.fc2 = nn.Linear(128, encoder_feature_dim)
         self.ln1 = nn.LayerNorm(encoder_feature_dim)
@@ -123,7 +123,7 @@ class LidarEncoder(nn.Module):
         x_out = self.conv_out(x_conv4)
         out_dense = x_out.dense()
 
-        h = out_dense.view(-1, 22861440)
+        h = out_dense.view(-1, 98304)
         h_fc = self.fc1(h)
 
         g = h_fc.view(-1, self.frame_stack, self.encoder_feature_dim)

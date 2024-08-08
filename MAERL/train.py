@@ -19,8 +19,8 @@ def parse_args():
     # voxelizer
     parser.add_argument('--frame_stack', default=3, type=int)
     parser.add_argument('--num_point_features', default=3, type=int)
-    parser.add_argument('--point_cloud_range', nargs="*", default=[-5.0, -5.0, -0.35, 5.0, 5.0, 1.65], type=float)
-    parser.add_argument('--voxel_size', nargs="*", default=[0.02, 0.02, 0.02], type=float)
+    parser.add_argument('--point_cloud_range', nargs="*", default=[-5.0, -5.0, -0.35, 5.0, 5.0, 0.65], type=float)
+    parser.add_argument('--voxel_size', nargs="*", default=[0.04, 0.04, 0.04], type=float)
     parser.add_argument('--max_num_points_per_voxel', default=10, type=int)
     parser.add_argument('--max_num_voxels', default=60000, type=int)
     # replay buffer
