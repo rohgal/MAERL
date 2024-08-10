@@ -67,8 +67,8 @@ class Actor(nn.Module):
         self.vfe = MeanVFE()
         self.encoder = LidarEncoder(num_point_features, grid_size, encoder_feature_dim, batch_size, frame_stack)
         self.trunk = nn.Sequential(
-            nn.Linear(encoder_feature_dim + direction_state_shape[0], hidden_dim), nn.ReLU(),
-            nn.Linear(hidden_dim, hidden_dim), nn.ReLU(),
+            nn.Linear(encoder_feature_dim + direction_state_shape[0], hidden_dim), nn.BatchNorm1d(hidden_dim, momentum=0.99), nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim), nn.BatchNorm1d(hidden_dim, momentum=0.99), nn.ReLU(),
             nn.Linear(hidden_dim, 2 * action_shape[0])
         )
 
@@ -130,8 +130,8 @@ class Actor(nn.Module):
             L.log_histogram('train_actor/%s_hist' % k, v, step)
 
         L.log_param('train_actor/fc1', self.trunk[0], step)
-        L.log_param('train_actor/fc2', self.trunk[2], step)
-        L.log_param('train_actor/fc3', self.trunk[4], step)
+        L.log_param('train_actor/fc2', self.trunk[3], step)
+        L.log_param('train_actor/fc3', self.trunk[6], step)
 
 
 class QFunction(nn.Module):
@@ -139,8 +139,8 @@ class QFunction(nn.Module):
     def __init__(self, encoder_feature_dim, direction_state_dim, action_dim, hidden_dim):
         super().__init__()
         self.trunk = nn.Sequential(
-            nn.Linear(encoder_feature_dim + direction_state_dim + action_dim, hidden_dim), nn.ReLU(),
-            nn.Linear(hidden_dim, hidden_dim), nn.ReLU(),
+            nn.Linear(encoder_feature_dim + direction_state_dim + action_dim, hidden_dim), nn.BatchNorm1d(hidden_dim, momentum=0.99), nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim), nn.BatchNorm1d(hidden_dim, momentum=0.99), nn.ReLU(),
             nn.Linear(hidden_dim, 1)
         )
 
@@ -192,8 +192,8 @@ class Critic(nn.Module):
             L.log_histogram('train_critic/%s_hist' % k, v, step)
 
         for i in range(3):
-            L.log_param('train_critic/q1_fc%d' % i, self.Q1.trunk[i * 2], step)
-            L.log_param('train_critic/q2_fc%d' % i, self.Q2.trunk[i * 2], step)
+            L.log_param('train_critic/q1_fc%d' % i, self.Q1.trunk[i * 3], step)
+            L.log_param('train_critic/q2_fc%d' % i, self.Q2.trunk[i * 3], step)
 
 
 class MAELearning(nn.Module):
@@ -318,7 +318,7 @@ class MAESacAgent(object):
         self.critic_target.load_state_dict(self.critic.state_dict())
 
         # tie encoders between actor and critic
-        self.actor.encoder.copy_conv_weights_from(self.critic.encoder)
+        # self.actor.encoder.copy_conv_weights_from(self.critic.encoder)
 
         self.log_alpha = torch.tensor(np.log(init_temperature)).to(device)
         self.log_alpha.requires_grad = True
@@ -382,8 +382,8 @@ class MAESacAgent(object):
     def update_critic(self, voxels, coordinates, numpoints, directions, action, reward, next_voxels, next_coordinates, next_numpoints, next_directions, not_done, L, step):
         with torch.no_grad():
             _, policy_action, log_pi, _ = self.actor(next_voxels, next_coordinates, next_numpoints, next_directions)
-            target_Q1, target_Q2 = self.critic_target(next_voxels, next_coordinates, next_numpoints, next_directions, policy_action)
-            target_V = torch.min(target_Q1,
+            target_Q1, target_Q2 = self.critic(next_voxels, next_coordinates, next_numpoints, next_directions, policy_action)
+            target_V.detach() = torch.min(target_Q1,
                                  target_Q2) - self.alpha.detach() * log_pi
             target_Q = reward + (not_done * self.discount * target_V)
 
@@ -457,16 +457,16 @@ class MAESacAgent(object):
             if step % self.actor_update_freq == 0:
                 self.update_actor_and_alpha(voxels, coordinates, numpoints, directions, L, step)
 
-            if step % self.critic_target_update_freq == 0:
-                soft_update_params(self.critic.Q1, self.critic_target.Q1,
-                                    self.critic_tau)
-                soft_update_params(self.critic.Q2, self.critic_target.Q2,
-                                    self.critic_tau)
-                soft_update_params(self.critic.encoder, self.critic_target.encoder,
-                                    self.critic_encoder_tau)
+        #     if step % self.critic_target_update_freq == 0:
+        #         soft_update_params(self.critic.Q1, self.critic_target.Q1,
+        #                             self.critic_tau)
+        #         soft_update_params(self.critic.Q2, self.critic_target.Q2,
+        #                             self.critic_tau)
+        #         soft_update_params(self.critic.encoder, self.critic_target.encoder,
+        #                             self.critic_encoder_tau)
 
-        if step < self.mae_cutoff_step and step % self.mae_update_freq == 0:
-            self.update_mae(voxels, coordinates, numpoints, L, step)
+        # if step < self.mae_cutoff_step and step % self.mae_update_freq == 0:
+        #     self.update_mae(voxels, coordinates, numpoints, L, step)
 
     def save(self, model_dir, step):
         torch.save(
