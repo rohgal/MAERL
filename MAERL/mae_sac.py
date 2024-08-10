@@ -383,9 +383,9 @@ class MAESacAgent(object):
         with torch.no_grad():
             _, policy_action, log_pi, _ = self.actor(next_voxels, next_coordinates, next_numpoints, next_directions)
             target_Q1, target_Q2 = self.critic(next_voxels, next_coordinates, next_numpoints, next_directions, policy_action)
-            target_V.detach() = torch.min(target_Q1,
+            target_V = torch.min(target_Q1,
                                  target_Q2) - self.alpha.detach() * log_pi
-            target_Q = reward + (not_done * self.discount * target_V)
+            target_Q = reward + (not_done * self.discount * target_V.detach())
 
         current_Q1, current_Q2 = self.critic(
             voxels, coordinates, numpoints, directions, action, detach_encoder=self.detach_encoder)
