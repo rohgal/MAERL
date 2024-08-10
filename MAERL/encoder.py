@@ -6,25 +6,32 @@ from functools import partial
 from spconv_utils import spconv
 
 
-# def tie_weights(src, trg):
-#     assert type(src) == type(trg)
-#     if isinstance(src, nn.Linear):
-#         trg.weight = src.weight
-#         trg.bias = src.bias
-#     elif isinstance(src, nn.LayerNorm):
-#         trg.weight = src.weight
-#         trg.bias = src.bias
-#     elif any(isinstance(layer, spconv.SparseSequential) for layer in src._modules.values()):
-#         for i in range(len(src)):
-#             iter_num = len(src[i]) - int(any(isinstance(layer, nn.ReLU) for layer in src[i]._modules.values()))
-#             for j in range(iter_num):
-#                 trg[i][j].weight = src[i][j].weight
-#                 trg[i][j].bias = src[i][j].bias
-#     else:
-#         iter_num = len(src) - int(any(isinstance(layer, nn.ReLU) for layer in src._modules.values()))
-#         for i in range(iter_num):
-#             trg[i].weight = src[i].weight
-#             trg[i].bias = src[i].bias
+def tie_weights(src, trg):
+    assert type(src) == type(trg)
+    if isinstance(src, nn.Linear):
+        trg.weight = src.weight
+        trg.bias = src.bias
+    elif isinstance(src, nn.LayerNorm):
+        trg.weight = src.weight
+        trg.bias = src.bias
+    elif isinstance(src, nn.LSTM):
+        for i in range(src.num_layers):
+            trg._parameters[f'weight_ih_l{i}'] = src._parameters[f'weight_ih_l{i}']
+            trg._parameters[f'weight_hh_l{i}'] = src._parameters[f'weight_hh_l{i}']
+            if src.bias:
+                trg._parameters[f'bias_ih_l{i}'] = src._parameters[f'bias_ih_l{i}']
+                trg._parameters[f'bias_hh_l{i}'] = src._parameters[f'bias_hh_l{i}']
+    elif any(isinstance(layer, spconv.SparseSequential) for layer in src._modules.values()):
+        for i in range(len(src)):
+            iter_num = len(src[i]) - int(any(isinstance(layer, nn.ReLU) for layer in src[i]._modules.values()))
+            for j in range(iter_num):
+                trg[i][j].weight = src[i][j].weight
+                trg[i][j].bias = src[i][j].bias
+    else:
+        iter_num = len(src) - int(any(isinstance(layer, nn.ReLU) for layer in src._modules.values()))
+        for i in range(iter_num):
+            trg[i].weight = src[i].weight
+            trg[i].bias = src[i].bias
 
 
 def post_act_block(in_channels, out_channels, kernel_size, indice_key=None, stride=1, padding=0,
@@ -132,15 +139,17 @@ class LidarEncoder(nn.Module):
         g_norm = self.ln1(g_fc)
         return g_norm
 
-    # def copy_conv_weights_from(self, source):
-    #     tie_weights(src=source.conv_input, trg=self.conv_input)
-    #     tie_weights(src=source.conv1, trg=self.conv1)
-    #     tie_weights(src=source.conv2, trg=self.conv2)
-    #     tie_weights(src=source.conv3, trg=self.conv3)
-    #     tie_weights(src=source.conv4, trg=self.conv4)
-    #     tie_weights(src=source.conv_out, trg=self.conv_out)
-    #     tie_weights(src=source.fc, trg=self.fc)
-    #     tie_weights(src=source.ln, trg=self.ln)
+    def copy_conv_weights_from(self, source):
+        tie_weights(src=source.conv_input, trg=self.conv_input)
+        tie_weights(src=source.conv1, trg=self.conv1)
+        tie_weights(src=source.conv2, trg=self.conv2)
+        tie_weights(src=source.conv3, trg=self.conv3)
+        tie_weights(src=source.conv4, trg=self.conv4)
+        tie_weights(src=source.conv_out, trg=self.conv_out)
+        tie_weights(src=source.fc1, trg=self.fc1)
+        tie_weights(src=source.lstm, trg=self.lstm)
+        tie_weights(src=source.fc2, trg=self.fc2)
+        tie_weights(src=source.ln1, trg=self.ln1)
 
 
 class LidarDecoder(nn.Module):

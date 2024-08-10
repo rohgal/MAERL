@@ -50,7 +50,7 @@ def parse_args():
     parser.add_argument('--encoder_feature_dim', default=75, type=int)
     parser.add_argument('--encoder_target_update_freq', default=2, type=int)
     parser.add_argument('--mask_ratio', default=0.8, type=float)
-    parser.add_argument('--mae_cutoff_step', default=10000, type=int)
+    parser.add_argument('--mae_cutoff_step', default=1000000, type=int)
     # sac
     parser.add_argument('--discount', default=0.99, type=float)
     parser.add_argument('--init_temperature', default=0.1, type=float)

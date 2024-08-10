@@ -318,7 +318,7 @@ class MAESacAgent(object):
         self.critic_target.load_state_dict(self.critic.state_dict())
 
         # tie encoders between actor and critic
-        # self.actor.encoder.copy_conv_weights_from(self.critic.encoder)
+        self.actor.encoder.copy_conv_weights_from(self.critic.encoder)
 
         self.log_alpha = torch.tensor(np.log(init_temperature)).to(device)
         self.log_alpha.requires_grad = True
@@ -402,8 +402,8 @@ class MAESacAgent(object):
 
     def update_actor_and_alpha(self, voxels, coordinates, numpoints, directions, L, step):
         # detach encoder, so we don't update it with the actor loss
-        _, pi, log_pi, log_std = self.actor(voxels, coordinates, numpoints, directions, detach_encoder=False)
-        actor_Q1, actor_Q2 = self.critic(voxels, coordinates, numpoints, directions, pi, detach_encoder=False)
+        _, pi, log_pi, log_std = self.actor(voxels, coordinates, numpoints, directions, detach_encoder=True)
+        actor_Q1, actor_Q2 = self.critic(voxels, coordinates, numpoints, directions, pi, detach_encoder=True)
 
         actor_Q = torch.min(actor_Q1, actor_Q2)
         actor_loss = (self.alpha.detach() * log_pi - actor_Q).mean()
@@ -465,8 +465,8 @@ class MAESacAgent(object):
                 soft_update_params(self.critic.encoder, self.critic_target.encoder,
                                     self.critic_encoder_tau)
 
-        # if step < self.mae_cutoff_step and step % self.mae_update_freq == 0:
-        #     self.update_mae(voxels, coordinates, numpoints, L, step)
+        if step < self.mae_cutoff_step and step % self.mae_update_freq == 0:
+            self.update_mae(voxels, coordinates, numpoints, L, step)
 
     def save(self, model_dir, step):
         torch.save(
