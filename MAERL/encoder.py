@@ -76,25 +76,25 @@ class LidarEncoder(nn.Module):
         block = post_act_block
 
         self.conv1 = spconv.SparseSequential(
-            block(12, 12, 3, padding=1, indice_key='subm1'),
+            block(12, 12, 3, norm_fn=norm_fn, padding=1, indice_key='subm1'),
         )
 
         self.conv2 = spconv.SparseSequential(
-            block(12, 24, 3, stride=2, padding=1, indice_key='spconv2', conv_type='spconv'),
-            block(24, 24, 3, padding=1, indice_key='subm2'),
-            block(24, 24, 3, padding=1, indice_key='subm2'),
+            block(12, 24, 3, norm_fn=norm_fn, stride=2, padding=1, indice_key='spconv2', conv_type='spconv'),
+            block(24, 24, 3, norm_fn=norm_fn, padding=1, indice_key='subm2'),
+            block(24, 24, 3, norm_fn=norm_fn, padding=1, indice_key='subm2'),
         )
 
         self.conv3 = spconv.SparseSequential(
-            block(24, 48, 3, stride=2, padding=1, indice_key='spconv3', conv_type='spconv'),
-            block(48, 48, 3, padding=1, indice_key='subm3'),
-            block(48, 48, 3, padding=1, indice_key='subm3'),
+            block(24, 48, 3, norm_fn=norm_fn, stride=2, padding=1, indice_key='spconv3', conv_type='spconv'),
+            block(48, 48, 3, norm_fn=norm_fn, padding=1, indice_key='subm3'),
+            block(48, 48, 3, norm_fn=norm_fn, padding=1, indice_key='subm3'),
         )
 
         self.conv4 = spconv.SparseSequential(
-            block(48, 48, 3, stride=2, padding=(0, 1, 1), indice_key='spconv4', conv_type='spconv'),
-            block(48, 48, 3, padding=1, indice_key='subm4'),
-            block(48, 48, 3, padding=1, indice_key='subm4'),
+            block(48, 48, 3, norm_fn=norm_fn, stride=2, padding=(0, 1, 1), indice_key='spconv4', conv_type='spconv'),
+            block(48, 48, 3, norm_fn=norm_fn, padding=1, indice_key='subm4'),
+            block(48, 48, 3, norm_fn=norm_fn, padding=1, indice_key='subm4'),
         )
 
         self.conv_out = spconv.SparseSequential(
