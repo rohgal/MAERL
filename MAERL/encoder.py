@@ -35,7 +35,7 @@ def tie_weights(src, trg):
 
 
 def post_act_block(in_channels, out_channels, kernel_size, indice_key=None, stride=1, padding=0,
-                   conv_type='subm'):
+                   conv_type='subm', norm_fn=None):
 
     if conv_type == 'subm':
         conv = spconv.SubMConv3d(in_channels, out_channels, kernel_size, bias=False, indice_key=indice_key)
@@ -49,6 +49,7 @@ def post_act_block(in_channels, out_channels, kernel_size, indice_key=None, stri
 
     m = spconv.SparseSequential(
         conv,
+        norm_fn(out_channels),
         nn.ReLU(),
     )
     return m
@@ -68,6 +69,7 @@ class LidarEncoder(nn.Module):
 
         self.conv_input = spconv.SparseSequential(
             spconv.SubMConv3d(num_point_features, 12, 3, padding=1, bias=False, indice_key='subm1'),
+            norm_fn(12),
             nn.ReLU(),
         )
 
@@ -98,6 +100,7 @@ class LidarEncoder(nn.Module):
         self.conv_out = spconv.SparseSequential(
             spconv.SparseConv3d(48, 96, (3, 1, 1), stride=(2, 1, 1), padding=self.last_pad,
                                 bias=False, indice_key='spconv_down2'),
+            norm_fn(96),
             nn.ReLU(),
         )
 

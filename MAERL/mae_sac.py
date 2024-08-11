@@ -67,8 +67,8 @@ class Actor(nn.Module):
         self.vfe = MeanVFE()
         self.encoder = LidarEncoder(num_point_features, grid_size, encoder_feature_dim, batch_size, frame_stack)
         self.trunk = nn.Sequential(
-            nn.Linear(encoder_feature_dim + direction_state_shape[0], hidden_dim), nn.BatchNorm1d(hidden_dim, momentum=0.99), nn.ReLU(),
-            nn.Linear(hidden_dim, hidden_dim), nn.BatchNorm1d(hidden_dim, momentum=0.99), nn.ReLU(),
+            nn.Linear(encoder_feature_dim + direction_state_shape[0], hidden_dim), nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim), nn.ReLU(),
             nn.Linear(hidden_dim, 2 * action_shape[0])
         )
 
@@ -130,8 +130,8 @@ class Actor(nn.Module):
             L.log_histogram('train_actor/%s_hist' % k, v, step)
 
         L.log_param('train_actor/fc1', self.trunk[0], step)
-        L.log_param('train_actor/fc2', self.trunk[3], step)
-        L.log_param('train_actor/fc3', self.trunk[6], step)
+        L.log_param('train_actor/fc2', self.trunk[2], step)
+        L.log_param('train_actor/fc3', self.trunk[4], step)
 
 
 class QFunction(nn.Module):
@@ -139,8 +139,8 @@ class QFunction(nn.Module):
     def __init__(self, encoder_feature_dim, direction_state_dim, action_dim, hidden_dim):
         super().__init__()
         self.trunk = nn.Sequential(
-            nn.Linear(encoder_feature_dim + direction_state_dim + action_dim, hidden_dim), nn.BatchNorm1d(hidden_dim, momentum=0.99), nn.ReLU(),
-            nn.Linear(hidden_dim, hidden_dim), nn.BatchNorm1d(hidden_dim, momentum=0.99), nn.ReLU(),
+            nn.Linear(encoder_feature_dim + direction_state_dim + action_dim, hidden_dim), nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim), nn.ReLU(),
             nn.Linear(hidden_dim, 1)
         )
 
@@ -192,8 +192,8 @@ class Critic(nn.Module):
             L.log_histogram('train_critic/%s_hist' % k, v, step)
 
         for i in range(3):
-            L.log_param('train_critic/q1_fc%d' % i, self.Q1.trunk[i * 3], step)
-            L.log_param('train_critic/q2_fc%d' % i, self.Q2.trunk[i * 3], step)
+            L.log_param('train_critic/q1_fc%d' % i, self.Q1.trunk[i * 2], step)
+            L.log_param('train_critic/q2_fc%d' % i, self.Q2.trunk[i * 2], step)
 
 
 class MAELearning(nn.Module):
@@ -402,8 +402,8 @@ class MAESacAgent(object):
 
     def update_actor_and_alpha(self, voxels, coordinates, numpoints, directions, L, step):
         # detach encoder, so we don't update it with the actor loss
-        _, pi, log_pi, log_std = self.actor(voxels, coordinates, numpoints, directions, detach_encoder=True)
-        actor_Q1, actor_Q2 = self.critic(voxels, coordinates, numpoints, directions, pi, detach_encoder=True)
+        _, pi, log_pi, log_std = self.actor(voxels, coordinates, numpoints, directions, detach_encoder=False)
+        actor_Q1, actor_Q2 = self.critic(voxels, coordinates, numpoints, directions, pi, detach_encoder=False)
 
         actor_Q = torch.min(actor_Q1, actor_Q2)
         actor_loss = (self.alpha.detach() * log_pi - actor_Q).mean()
