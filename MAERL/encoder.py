@@ -105,9 +105,9 @@ class LidarEncoder(nn.Module):
         )
 
         self.fc1 = nn.Linear(98304, encoder_feature_dim)
+        self.ln1 = nn.LayerNorm(encoder_feature_dim)
         self.lstm = nn.LSTM(encoder_feature_dim, 128, 2, batch_first=True)
         self.fc2 = nn.Linear(128, encoder_feature_dim)
-        self.ln1 = nn.LayerNorm(encoder_feature_dim)
 
     def forward(self, voxel_features, voxel_coordinates, downstream=False):
         if downstream:
@@ -135,12 +135,12 @@ class LidarEncoder(nn.Module):
 
         h = out_dense.view(-1, 98304)
         h_fc = self.fc1(h)
+        h_norm = self.ln1(h_fc)
 
-        g = h_fc.view(-1, self.frame_stack, self.encoder_feature_dim)
+        g = h_norm.view(-1, self.frame_stack, self.encoder_feature_dim)
         g_lstm, _ = self.lstm(g)
         g_fc = self.fc2(g_lstm[:, -1, :])
-        g_norm = self.ln1(g_fc)
-        return g_norm
+        return g_fc
 
     def copy_conv_weights_from(self, source):
         tie_weights(src=source.conv_input, trg=self.conv_input)
