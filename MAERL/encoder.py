@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 import torch.nn as nn
-
+from batchrenorm import BatchRenorm1d
 from functools import partial
 from spconv_utils import spconv
 
@@ -63,7 +63,7 @@ class LidarEncoder(nn.Module):
         self.frame_stack = frame_stack
         self.encoder_feature_dim = encoder_feature_dim
 
-        norm_fn = partial(nn.BatchNorm1d, eps=1e-3, momentum=0.01)
+        norm_fn = partial(BatchRenorm1d, momentum=0.99)
 
         self.last_pad = 0
 
