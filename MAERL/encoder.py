@@ -63,7 +63,7 @@ class LidarEncoder(nn.Module):
         self.frame_stack = frame_stack
         self.encoder_feature_dim = encoder_feature_dim
 
-        norm_fn = partial(BatchRenorm1d, momentum=0.99)
+        norm_fn = partial(BatchRenorm1d, momentum=0.01)
 
         self.last_pad = 0
 
