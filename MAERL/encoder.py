@@ -35,7 +35,7 @@ def tie_weights(src, trg):
 
 
 def post_act_block(in_channels, out_channels, kernel_size, indice_key=None, stride=1, padding=0,
-                   conv_type='subm', norm_fn=None):
+                   conv_type='subm'):
 
     if conv_type == 'subm':
         conv = spconv.SubMConv3d(in_channels, out_channels, kernel_size, bias=False, indice_key=indice_key)
@@ -49,7 +49,6 @@ def post_act_block(in_channels, out_channels, kernel_size, indice_key=None, stri
 
     m = spconv.SparseSequential(
         conv,
-        norm_fn(out_channels),
         nn.ReLU(),
     )
     return m
@@ -63,44 +62,40 @@ class LidarEncoder(nn.Module):
         self.frame_stack = frame_stack
         self.encoder_feature_dim = encoder_feature_dim
 
-        norm_fn = partial(BatchRenorm1d, momentum=0.01)
-
         self.last_pad = 0
 
         self.conv_input = spconv.SparseSequential(
             spconv.SubMConv3d(num_point_features, 12, 3, padding=1, bias=False, indice_key='subm1'),
-            norm_fn(12),
             nn.ReLU(),
         )
 
         block = post_act_block
 
         self.conv1 = spconv.SparseSequential(
-            block(12, 12, 3, norm_fn=norm_fn, padding=1, indice_key='subm1'),
+            block(12, 12, 3, padding=1, indice_key='subm1'),
         )
 
         self.conv2 = spconv.SparseSequential(
-            block(12, 24, 3, norm_fn=norm_fn, stride=2, padding=1, indice_key='spconv2', conv_type='spconv'),
-            block(24, 24, 3, norm_fn=norm_fn, padding=1, indice_key='subm2'),
-            block(24, 24, 3, norm_fn=norm_fn, padding=1, indice_key='subm2'),
+            block(12, 24, 3, stride=2, padding=1, indice_key='spconv2', conv_type='spconv'),
+            block(24, 24, 3, padding=1, indice_key='subm2'),
+            block(24, 24, 3, padding=1, indice_key='subm2'),
         )
 
         self.conv3 = spconv.SparseSequential(
-            block(24, 48, 3, norm_fn=norm_fn, stride=2, padding=1, indice_key='spconv3', conv_type='spconv'),
-            block(48, 48, 3, norm_fn=norm_fn, padding=1, indice_key='subm3'),
-            block(48, 48, 3, norm_fn=norm_fn, padding=1, indice_key='subm3'),
+            block(24, 48, 3, stride=2, padding=1, indice_key='spconv3', conv_type='spconv'),
+            block(48, 48, 3, padding=1, indice_key='subm3'),
+            block(48, 48, 3, padding=1, indice_key='subm3'),
         )
 
         self.conv4 = spconv.SparseSequential(
-            block(48, 48, 3, norm_fn=norm_fn, stride=2, padding=(0, 1, 1), indice_key='spconv4', conv_type='spconv'),
-            block(48, 48, 3, norm_fn=norm_fn, padding=1, indice_key='subm4'),
-            block(48, 48, 3, norm_fn=norm_fn, padding=1, indice_key='subm4'),
+            block(48, 48, 3, stride=2, padding=(0, 1, 1), indice_key='spconv4', conv_type='spconv'),
+            block(48, 48, 3, padding=1, indice_key='subm4'),
+            block(48, 48, 3, padding=1, indice_key='subm4'),
         )
 
         self.conv_out = spconv.SparseSequential(
             spconv.SparseConv3d(48, 96, (3, 1, 1), stride=(2, 1, 1), padding=self.last_pad,
                                 bias=False, indice_key='spconv_down2'),
-            norm_fn(96),
             nn.ReLU(),
         )
 
@@ -154,31 +149,3 @@ class LidarEncoder(nn.Module):
         tie_weights(src=source.fc2, trg=self.fc2)
         tie_weights(src=source.ln1, trg=self.ln1)
 
-
-class LidarDecoder(nn.Module):
-    def __init__(self, encoder_feature_dim, batch_size):
-        super().__init__()
-        self.batch_size = batch_size
-        self.fc = nn.Linear(encoder_feature_dim, 98304)
-        self.deconv1 = nn.Sequential(
-            nn.ConvTranspose3d(96, 48, 3, padding=(0,1,1), stride=2, bias=False),
-            nn.ReLU()
-        )
-        self.deconv2 = nn.Sequential(
-            nn.ConvTranspose3d(48, 16, 3, padding=(0,1,1), stride=(3,2,2), bias=False),
-            nn.ReLU()
-        )
-        self.deconv3 = nn.Sequential(
-            nn.ConvTranspose3d(16, 3, 3, padding=1, output_padding=1, stride=(3,2,2), bias=False),
-        )
-
-    def forward(self, encoder_out):
-        x_fc = self.fc(encoder_out)
-
-        h = x_fc.view(self.batch_size, 96, 1, 32, 32)
-        
-        h_up1 = self.deconv1(h)
-        h_up2 = self.deconv2(h_up1)
-        h_up3 = self.deconv3(h_up2)
-        out = h_up3
-        return out

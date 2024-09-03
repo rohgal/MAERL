@@ -102,7 +102,7 @@ class GazeboEnv:
         if evaluation:
             self.episode_step = 0
             self.pub_action([0.0, 0.0])
-            self.reset_sim()
+            # self.reset_sim()
             self.spawn_robot()
             self.set_goal(min_distance=3.0, safe_dist=0.35)
             self.propagate_sim()
@@ -116,7 +116,7 @@ class GazeboEnv:
         else:
             self.episode_step = 0
             self.pub_action([0.0, 0.0])
-            self.reset_sim()
+            # self.reset_sim()
             self.spawn_robot()
             self.set_goal(min_distance=0.43, safe_dist=0.5)
             self.propagate_sim()
@@ -153,17 +153,24 @@ class GazeboEnv:
             done_reason = None
 
         direction_state = np.array([dist_curr, theta, action[0], action[1]], dtype=np.float32)
-        self.episode_step+=1
+        self.episode_step += 1
         return laser_state, direction_state, reward, done, done_reason
 
     def spawn_robot(self):
-        start_x, start_y, start_yaw = self.map_manager.get_random_pos_on_map(safe_dist=0.43)
+        start_x = 0
+        start_y = 0
+        start_yaw = 0
+        position_ok = False
+        while not position_ok:
+            start_x, start_y, start_yaw = self.map_manager.get_random_pos_on_map(safe_dist=0.43)
+            position_ok = self.check_spawn_pos(start_x, start_y)
+        start_z = 0.51 if -2.43 >= start_x else 0.01
 
         quaternion = Quaternion.from_euler(0.0, 0.0, start_yaw)
         object_state = self.set_self_state
         object_state.pose.position.x = start_x
         object_state.pose.position.y = start_y
-        object_state.pose.position.z = 0.01
+        object_state.pose.position.z = start_z
         object_state.pose.orientation.x = quaternion.x
         object_state.pose.orientation.y = quaternion.y
         object_state.pose.orientation.z = quaternion.z
@@ -175,14 +182,14 @@ class GazeboEnv:
         self.robot_yaw = start_yaw
 
     def set_goal(self, min_distance, safe_dist):
-        while True:
-            x, y, yaw = self.map_manager.get_random_pos_on_map(safe_dist)
-            distance = math.sqrt((self.robot_x - x) ** 2 + (self.robot_y - y) ** 2)
-        
-            if distance >= min_distance:
-                self.goal_x = x
-                self.goal_y = y
-                break
+        goal_x = 0
+        goal_y = 0
+        position_ok = False
+        while not position_ok:
+            goal_x, goal_y, _ = self.map_manager.get_random_pos_on_map(safe_dist=0.43)
+            position_ok = self.check_goal_pos(goal_x, goal_y, min_distance)
+        self.goal_x = goal_x
+        self.goal_y = goal_y
 
     def get_laser_obs(self):
         return self.velodyne_data
@@ -298,6 +305,36 @@ class GazeboEnv:
     def odom_callback(self, od_data):
         self.last_odom = od_data
 
+    def check_spawn_pos(self, x, y):
+        goal_ok = True
+
+        if -0.93 > x > -2.43:
+            goal_ok = False
+
+        if 0.56 > x >= -0.93 and -0.354 > y:
+            goal_ok = False
+
+        return goal_ok
+
+    def check_goal_pos(self, x, y, min_distance):
+        goal_ok = True
+
+        if 0.56 > x > 0.41 and -0.354 > y:
+            goal_ok = False
+
+        if -0.93 > x > -1.08 and -0.354 > y > -3.354:
+            goal_ok = False
+
+        if -2.28 > x > -2.43 and -0.354 > y:
+            goal_ok = False
+
+        distance = math.sqrt((self.robot_x - x) ** 2 + (self.robot_y - y) ** 2)
+        
+        if min_distance >= distance:
+            goal_ok = False
+
+        return goal_ok
+
     @staticmethod
     def check_collision(laser_data):
         data = laser_data
@@ -343,3 +380,5 @@ class GazeboEnv:
         else:
             target = False
         return target
+
+

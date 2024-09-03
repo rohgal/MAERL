@@ -234,14 +234,14 @@ Visualization Manager:
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
-        Max Value: 10
-        Min Value: -10
+        Max Value: 3.000478744506836
+        Min Value: 0.004521489143371582
         Value: true
       Axis: Z
       Channel Name: intensity
       Class: rviz/PointCloud2
       Color: 255; 255; 255
-      Color Transformer: Intensity
+      Color Transformer: AxisColor
       Decay Time: 0
       Enabled: true
       Invert Rainbow: false
@@ -253,7 +253,7 @@ Visualization Manager:
       Selectable: true
       Size (Pixels): 3
       Size (m): 0.029999999329447746
-      Style: Flat Squares
+      Style: Points
       Topic: /velodyne_points
       Unreliable: false
       Use Fixed Frame: true
@@ -315,7 +315,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/ThirdPersonFollower
-      Distance: 30.611238479614258
+      Distance: 27.65576934814453
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -323,17 +323,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 8.301212310791016
-        Y: 6.501018524169922
-        Z: -7.62939453125e-06
+        X: 6.857702255249023
+        Y: 6.4901885986328125
+        Z: -1.9073486328125e-06
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.7853981852531433
+      Pitch: 0.7753981947898865
       Target Frame: <Fixed Frame>
-      Yaw: 0.7853981852531433
+      Yaw: 0.7603982090950012
     Saved: ~
 Window Geometry:
   Camera:

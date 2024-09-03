@@ -31,7 +31,7 @@ def parse_args():
     parser.add_argument('--num_train_steps', default=1000000, type=int)
     parser.add_argument('--batch_size', default=4, type=int)
     parser.add_argument('--detach_encoder', default=False, action='store_true')
-    parser.add_argument('--hidden_dim', default=1024, type=int)
+    parser.add_argument('--hidden_dim', default=2048, type=int)
     # critic
     parser.add_argument('--critic_lr', default=1e-4, type=float)
     parser.add_argument('--critic_beta', default=0.9, type=float)
@@ -44,13 +44,8 @@ def parse_args():
     parser.add_argument('--actor_log_std_min', default=-10, type=float)
     parser.add_argument('--actor_log_std_max', default=2, type=float)
     parser.add_argument('--actor_update_freq', default=2, type=int)
-    # mae
-    parser.add_argument('--encoder_lr', default=1e-4, type=float)
-    parser.add_argument('--encoder_tau', default=0.05, type=float)
+    # encoder
     parser.add_argument('--encoder_feature_dim', default=75, type=int)
-    parser.add_argument('--encoder_target_update_freq', default=2, type=int)
-    parser.add_argument('--mask_ratio', default=0.8, type=float)
-    parser.add_argument('--mae_cutoff_step', default=1000000, type=int)
     # sac
     parser.add_argument('--discount', default=0.99, type=float)
     parser.add_argument('--init_temperature', default=0.1, type=float)
@@ -172,11 +167,7 @@ def main():
             critic_tau=args.critic_tau,
             critic_encoder_tau=args.critic_encoder_tau,
             critic_target_update_freq=args.critic_target_update_freq,
-            encoder_lr=args.encoder_lr,
-            encoder_tau=args.encoder_tau,
             encoder_feature_dim=args.encoder_feature_dim,
-            mask_ratio=args.mask_ratio,
-            mae_cutoff_step=args.mae_cutoff_step,
             log_interval=args.log_interval,
             detach_encoder=args.detach_encoder,
         )
@@ -219,7 +210,7 @@ def main():
             with utils.eval_mode(agent):
                 action = agent.sample_action(obs_sensor, obs_direction, processfunc=replay_buffer.batched_points_to_voxels)
 
-        a_in = [(action[0] + 1) / 2, action[1]]
+        a_in = [1.3*((action[0] + 1) / 2), action[1]]
 
         # run training update
         if step >= args.init_steps:
