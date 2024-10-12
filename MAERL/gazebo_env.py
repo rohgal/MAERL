@@ -306,26 +306,32 @@ class GazeboEnv:
         self.last_odom = od_data
 
     def check_spawn_pos(self, x, y):
-        goal_ok = True
+        spawn_ok = True
 
-        if -0.93 > x > -2.43:
-            goal_ok = False
+        if 0.755 > x > -2.68 and -0.35 > y:
+            spawn_ok = False
 
-        if 0.56 > x >= -0.93 and -0.354 > y:
-            goal_ok = False
+        if -0.76 > x > -2.68 and -0.35 >= y > -1.25:
+            spawn_ok = False
 
-        return goal_ok
+        return spawn_ok
 
     def check_goal_pos(self, x, y, min_distance):
         goal_ok = True
 
-        if 0.56 > x > 0.41 and -0.354 > y:
+        if 0.755 > x > 0.24 and -0.35 > y:
+            goal_ok = False
+        
+        if 0.755 > x > -2.68 and -4.6 > y:
             goal_ok = False
 
-        if -0.93 > x > -1.08 and -0.354 > y > -3.354:
+        if -0.76 > x > -1.22 and 1.25 > y > -3.54:
             goal_ok = False
 
-        if -2.28 > x > -2.43 and -0.354 > y:
+        if -1.22 > x > -2.2 and 1.25 > y > 0.9:
+            goal_ok = False
+
+        if -2.2 > x > -2.68 and -0.35 > y:
             goal_ok = False
 
         distance = math.sqrt((self.robot_x - x) ** 2 + (self.robot_y - y) ** 2)

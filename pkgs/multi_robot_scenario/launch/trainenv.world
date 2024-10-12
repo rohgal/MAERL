@@ -398,7 +398,7 @@
     <model name='ramp'>
       <static>1</static>
       <link name='link'>
-        <pose>0 0 0 0 -0 1.5708</pose>
+        <pose>-3.0 0 0 0 -0 0</pose>
         <collision name='collision'>
           <geometry>
             <mesh>
