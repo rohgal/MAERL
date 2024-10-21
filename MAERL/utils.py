@@ -277,8 +277,8 @@ class FrameStack(gym.Wrapper):
         self._frames = deque([], maxlen=k)
         self._max_episode_steps = env._max_episode_steps
 
-    def reset(self):
-        obs_sensor, obs_direction = self.env.reset()
+    def reset(self, goal_finite=False):
+        obs_sensor, obs_direction = self.env.reset(goal_finite=goal_finite)
         for _ in range(self._k):
             self._frames.append(obs_sensor)
         return self._get_obs(), obs_direction

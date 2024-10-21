@@ -28,6 +28,7 @@ def parse_args():
     # train
     parser.add_argument('--agent', default='mae_sac', type=str)
     parser.add_argument('--init_steps', default=10000, type=int)
+    parser.add_argument('--goal_finite_step', default=500000, type=int)
     parser.add_argument('--num_train_steps', default=1000000, type=int)
     parser.add_argument('--batch_size', default=4, type=int)
     parser.add_argument('--detach_encoder', default=False, action='store_true')
@@ -194,7 +195,11 @@ def main():
             if step >= args.init_steps:
                 L.log('train/episode_reward', episode_reward, step)
 
-            obs_sensor, obs_direction = env.reset()
+            if step < args.goal_finite_step:
+                obs_sensor, obs_direction = env.reset(goal_finite=True)
+            else:
+                obs_sensor, obs_direction = env.reset()
+
             done = False
             episode_reward = 0
             episode_step = 0

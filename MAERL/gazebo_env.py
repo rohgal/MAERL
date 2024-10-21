@@ -98,13 +98,13 @@ class GazeboEnv:
             "/r1/odom", Odometry, self.odom_callback, queue_size=1
         )
 
-    def reset(self, evaluation=False):
+    def reset(self, goal_finite, evaluation=False):
         if evaluation:
             self.episode_step = 0
             self.pub_action([0.0, 0.0])
             # self.reset_sim()
             self.spawn_robot()
-            self.set_goal(min_distance=3.0, safe_dist=0.35)
+            self.set_goal(min_distance=3.0, safe_dist=0.35, goal_finite=goal_finite)
             self.propagate_sim()
 
             laser_state = self.get_laser_obs()
@@ -118,7 +118,7 @@ class GazeboEnv:
             self.pub_action([0.0, 0.0])
             # self.reset_sim()
             self.spawn_robot()
-            self.set_goal(min_distance=0.43, safe_dist=0.5)
+            self.set_goal(min_distance=0.43, safe_dist=0.5, goal_finite=goal_finite)
             self.propagate_sim()
 
             laser_state = self.get_laser_obs()
@@ -181,13 +181,13 @@ class GazeboEnv:
         self.robot_y = object_state.pose.position.y
         self.robot_yaw = start_yaw
 
-    def set_goal(self, min_distance, safe_dist):
+    def set_goal(self, min_distance, safe_dist, goal_finite):
         goal_x = 0
         goal_y = 0
         position_ok = False
         while not position_ok:
             goal_x, goal_y, _ = self.map_manager.get_random_pos_on_map(safe_dist=0.43)
-            position_ok = self.check_goal_pos(goal_x, goal_y, min_distance)
+            position_ok = self.check_goal_pos(goal_x, goal_y, min_distance, goal_finite=goal_finite)
         self.goal_x = goal_x
         self.goal_y = goal_y
 
@@ -316,8 +316,12 @@ class GazeboEnv:
 
         return spawn_ok
 
-    def check_goal_pos(self, x, y, min_distance):
+    def check_goal_pos(self, x, y, min_distance, goal_finite):
         goal_ok = True
+
+        if goal_finite:
+            if x > 0.24 or -2.2 > x:
+                goal_ok = False
 
         if 0.755 > x > 0.24 and -0.35 > y:
             goal_ok = False
