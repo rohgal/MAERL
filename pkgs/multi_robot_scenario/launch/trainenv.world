@@ -498,6 +498,42 @@
       <allow_auto_disable>1</allow_auto_disable>
       <pose>-6.45 -0.0084 0.25 0 -0 1.5708</pose>
     </model>
+    <model name='roofdeck'>
+      <link name='link_0'>
+        <pose>1e-06 3e-06 0 0 -0 0</pose>
+        <collision name='collision'>
+          <laser_retro>0</laser_retro>
+          <max_contacts>10</max_contacts>
+          <pose>0 0 0 0 -0 0</pose>
+          <geometry>
+            <box>
+              <size>9.8 20 0.5</size>
+            </box>
+          </geometry>
+          <surface>
+            <friction>
+              <ode>
+                <mu>100</mu>
+                <mu2>50</mu2>
+              </ode>
+              <torsional>
+                <ode/>
+              </torsional>
+            </friction>
+            <contact>
+              <ode/>
+            </contact>
+            <bounce/>
+          </surface>
+        </collision>
+        <self_collide>0</self_collide>
+        <enable_wind>0</enable_wind>
+        <kinematic>0</kinematic>
+      </link>
+      <static>1</static>
+      <allow_auto_disable>1</allow_auto_disable>
+      <pose>-0.5 0 3.25 0 -0 1.5708</pose>
+    </model>
     <model name='tabledeck_0'>
       <link name='link_0'>
         <pose>1e-06 3e-06 0 0 -0 0</pose>

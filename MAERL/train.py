@@ -28,7 +28,6 @@ def parse_args():
     # train
     parser.add_argument('--agent', default='mae_sac', type=str)
     parser.add_argument('--init_steps', default=10000, type=int)
-    parser.add_argument('--goal_finite_step', default=500000, type=int)
     parser.add_argument('--num_train_steps', default=1000000, type=int)
     parser.add_argument('--batch_size', default=4, type=int)
     parser.add_argument('--detach_encoder', default=False, action='store_true')
@@ -62,6 +61,7 @@ def parse_args():
     parser.add_argument('--log_interval', default=50, type=int)
     parser.add_argument('--seed', default=1, type=int)
     parser.add_argument('--work_dir', default='pytorch_models', type=str)
+    parser.add_argument('--modelname_tocontinue', default='sac_pure_small_batch_1.3', type=str)
     args = parser.parse_args()
     return args
 
@@ -83,7 +83,7 @@ def evaluate(env, agent, processfunc, video, num_episodes, L, step, args):
                         action = agent.sample_action(obs_sensor, obs_direction, processfunc=processfunc)
                     else:
                         action = agent.select_action(obs_sensor, obs_direction, processfunc=processfunc)
-                a_in = [(action[0] + 1) / 2, action[1]]
+                a_in = [1.3*((action[0] + 1) / 2), action[1]]
                 obs_sensor, obs_direction, reward, done, done_reason = env.step(a_in)
                 episode_reward += reward
             video.save()
@@ -114,18 +114,18 @@ def main():
     ts = time.strftime("%m-%d-%H-%M-%S", ts)
     exp_name = 'MAERL' + '-' + ts +'-b'  \
     + str(args.batch_size) + '-s' + str(args.seed)
-    args.work_dir = args.work_dir + '/'  + exp_name
-    utils.make_dir(args.work_dir)
+    work_dir = args.work_dir + '/'  + exp_name
+    utils.make_dir(work_dir)
     if args.save_model:
-        model_dir = utils.make_dir(os.path.join(args.work_dir, 'model'))
+        model_dir = utils.make_dir(os.path.join(work_dir, 'model'))
     if args.save_buffer:
-        buffer_dir = utils.make_dir(os.path.join(args.work_dir, 'buffer'))
+        buffer_dir = utils.make_dir(os.path.join(work_dir, 'buffer'))
     if args.do_eval:
-        video_dir = utils.make_dir(os.path.join(args.work_dir, 'video'))
+        video_dir = utils.make_dir(os.path.join(work_dir, 'video'))
         video = VideoRecorder(video_dir)
     
     # save args
-    with open(os.path.join(args.work_dir, 'args.json'), 'w') as f:
+    with open(os.path.join(work_dir, 'args.json'), 'w') as f:
         json.dump(vars(args), f, sort_keys=True, indent=4)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -172,8 +172,9 @@ def main():
             log_interval=args.log_interval,
             detach_encoder=args.detach_encoder,
         )
+    agent.load(args.work_dir, args.modelname_tocontinue, 300000)
 
-    L = Logger(args.work_dir, use_tb=args.save_tb)
+    L = Logger(work_dir, use_tb=args.save_tb)
 
     episode, episode_reward, done = 0, 0, True
     start_time = time.time()
@@ -195,11 +196,7 @@ def main():
             if step >= args.init_steps:
                 L.log('train/episode_reward', episode_reward, step)
 
-            if step < args.goal_finite_step:
-                obs_sensor, obs_direction = env.reset(goal_finite=True)
-            else:
-                obs_sensor, obs_direction = env.reset()
-
+            obs_sensor, obs_direction = env.reset()
             done = False
             episode_reward = 0
             episode_step = 0

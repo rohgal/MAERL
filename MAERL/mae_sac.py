@@ -377,42 +377,42 @@ class MAESacAgent(object):
             soft_update_params(self.critic.encoder, self.critic_target.encoder,
                                 self.critic_encoder_tau)
 
-    def save(self, model_dir, step):
+    def save(self, model_name, step):
         torch.save(
-            self.actor.state_dict(), '%s/actor_%s.pt' % (model_dir, step)
+            self.actor.state_dict(), '%s/actor_%s.pt' % (model_name, step)
         )
         torch.save(
-            self.critic.state_dict(), '%s/critic_%s.pt' % (model_dir, step)
+            self.critic.state_dict(), '%s/critic_%s.pt' % (model_name, step)
         )
         torch.save(
-            self.critic_target.state_dict(), '%s/critic_%s.pt' % (model_dir, step)
+            self.critic_target.state_dict(), '%s/critic_%s.pt' % (model_name, step)
         )
-        torch.save(
-            self.actor_optimizer.state_dict(), '%s/actor_adam_%s.pt' % (model_dir, step)
-        )
-        torch.save(
-            self.critic_optimizer.state_dict(), '%s/critic_adam_%s.pt' % (model_dir, step)
-        )
-        torch.save(
-            self.log_alpha_optimizer.state_dict(), '%s/log_alpha_adam_%s.pt' % (model_dir, step)
-        )
+        # torch.save(
+        #     self.actor_optimizer.state_dict(), '%s/actor_adam_%s.pt' % (model_name, step)
+        # )
+        # torch.save(
+        #     self.critic_optimizer.state_dict(), '%s/critic_adam_%s.pt' % (model_name, step)
+        # )
+        # torch.save(
+        #     self.log_alpha_optimizer.state_dict(), '%s/log_alpha_adam_%s.pt' % (model_name, step)
+        # )
 
-    def load(self, model_dir, step):
+    def load(self, work_dir, model_name, step):
         self.actor.load_state_dict(
-            torch.load('%s/actor_%s.pt' % (model_dir, step))
+            torch.load('%s/%s/model/actor_%s.pt' % (work_dir, model_name, step))
         )
         self.critic.load_state_dict(
-            torch.load('%s/critic_%s.pt' % (model_dir, step))
+            torch.load('%s/%s/model/critic_%s.pt' % (work_dir, model_name, step))
         )
         self.critic_target.load_state_dict(
-            torch.load('%s/critic_%s.pt' % (model_dir, step))
+            torch.load('%s/%s/model/critic_%s.pt' % (work_dir, model_name, step))
         )
-        self.actor_optimizer.state_dict(
-            torch.load('%s/actor_adam_%s.pt' % (model_dir, step))
-        )
-        self.critic_optimizer.state_dict(
-            torch.load('%s/critic_adam_%s.pt' % (model_dir, step))
-        )
-        self.log_alpha_optimizer.state_dict(
-            torch.load('%s/log_alpha_adam_%s.pt' % (model_dir, step))
-        )
+        # self.actor_optimizer.state_dict(
+        #     torch.load('%s/actor_adam_%s.pt' % (model_name, step))
+        # )
+        # self.critic_optimizer.state_dict(
+        #     torch.load('%s/critic_adam_%s.pt' % (model_name, step))
+        # )
+        # self.log_alpha_optimizer.state_dict(
+        #     torch.load('%s/log_alpha_adam_%s.pt' % (model_name, step))
+        # )

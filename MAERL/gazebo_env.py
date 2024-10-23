@@ -34,6 +34,10 @@ class GazeboEnv:
                                 dtype=np.float32)
         self._max_episode_steps = 800
         self.episode_step = 0
+        self.total_step = 0
+
+        self.goal_fixed_candidates1 = [(-0.23, -1.02),(-0.31, -2.43),(-0.37, -4.21)]
+        self.goal_fixed_candidates2 = [(-1.73, 0.237),(-1.8, -1.47),(-1.75, -3.86)]
 
         self.robot_x = None
         self.robot_y = None
@@ -98,13 +102,13 @@ class GazeboEnv:
             "/r1/odom", Odometry, self.odom_callback, queue_size=1
         )
 
-    def reset(self, goal_finite, evaluation=False):
+    def reset(self, evaluation):
         if evaluation:
             self.episode_step = 0
             self.pub_action([0.0, 0.0])
             # self.reset_sim()
             self.spawn_robot()
-            self.set_goal(min_distance=3.0, safe_dist=0.35, goal_finite=goal_finite)
+            self.set_goal(min_distance=3.0, safe_dist=0.35, goal_finite=True)
             self.propagate_sim()
 
             laser_state = self.get_laser_obs()
@@ -118,7 +122,38 @@ class GazeboEnv:
             self.pub_action([0.0, 0.0])
             # self.reset_sim()
             self.spawn_robot()
-            self.set_goal(min_distance=0.43, safe_dist=0.5, goal_finite=goal_finite)
+
+            if self.total_step < 200000:
+                if self.robot_x > -1.1:
+                    self.goal_x = self.goal_fixed_candidates1[0][0]
+                    self.goal_y = self.goal_fixed_candidates1[0][1]
+                elif -1.1 > self.robot_x:
+                    self.goal_x = self.goal_fixed_candidates2[0][0]
+                    self.goal_y = self.goal_fixed_candidates2[0][1]
+            elif 200000 < self.total_step < 300000:
+                if self.robot_x > -1.1:
+                    self.goal_x = self.goal_fixed_candidates1[1][0]
+                    self.goal_y = self.goal_fixed_candidates1[1][1]
+                elif -1.1 > self.robot_x:
+                    self.goal_x = self.goal_fixed_candidates2[1][0]
+                    self.goal_y = self.goal_fixed_candidates2[1][1]
+            elif 300000 < self.total_step < 400000:
+                if self.robot_x > -1.1:
+                    self.goal_x = self.goal_fixed_candidates1[1][0]
+                    self.goal_y = self.goal_fixed_candidates1[1][1]
+                elif -1.1 > self.robot_x:
+                    self.goal_x = self.goal_fixed_candidates2[1][0]
+                    self.goal_y = self.goal_fixed_candidates2[1][1]
+            elif 400000 < self.total_step < 500000:
+                if self.robot_x > -1.1:
+                    self.goal_x = self.goal_fixed_candidates1[2][0]
+                    self.goal_y = self.goal_fixed_candidates1[2][1]
+                elif -1.1 > self.robot_x:
+                    self.goal_x = self.goal_fixed_candidates2[2][0]
+                    self.goal_y = self.goal_fixed_candidates2[2][1]
+            else:
+                self.set_goal(min_distance=0.43, safe_dist=0.5, goal_finite=True)
+                
             self.propagate_sim()
 
             laser_state = self.get_laser_obs()
@@ -154,6 +189,7 @@ class GazeboEnv:
 
         direction_state = np.array([dist_curr, theta, action[0], action[1]], dtype=np.float32)
         self.episode_step += 1
+        self.total_step += 1
         return laser_state, direction_state, reward, done, done_reason
 
     def spawn_robot(self):
@@ -181,7 +217,7 @@ class GazeboEnv:
         self.robot_y = object_state.pose.position.y
         self.robot_yaw = start_yaw
 
-    def set_goal(self, min_distance, safe_dist, goal_finite):
+    def set_goal(self, min_distance, safe_dist, goal_finite=False):
         goal_x = 0
         goal_y = 0
         position_ok = False
@@ -311,7 +347,7 @@ class GazeboEnv:
         if 0.755 > x > -2.68 and -0.35 > y:
             spawn_ok = False
 
-        if -0.76 > x > -2.68 and -0.35 >= y > -1.25:
+        if -0.76 > x > -2.68 and 1.25 >= y > -0.35:
             spawn_ok = False
 
         return spawn_ok
