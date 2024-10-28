@@ -19,10 +19,10 @@ def parse_args():
     parser.add_argument('--num_eval_episodes', default=20, type=int)
     parser.add_argument('--seed', default=7, type=int)
     parser.add_argument('--work_dir', default='pytorch_models', type=str)
-    parser.add_argument('--model_name', default='sac_pure_small_batch_1.3', type=str)
-    parser.add_argument('--stepgrade', default=300000, type=int)
+    parser.add_argument('--model_name', default='MAERL-10-23-16-14-01-b4-s1', type=str)
+    parser.add_argument('--stepgrade', default=500000, type=int)
     parser.add_argument('--result_dir', default='eval_results', type=str)
-    parser.add_argument('--exp_name', default='sac_pure_small_batch_1.3_300k', type=str)
+    parser.add_argument('--exp_name', default='MAERL-10-23-16-14-01-b4-s1_500k', type=str)
     args = parser.parse_args()
     return args
 
@@ -51,6 +51,7 @@ def evaluate(env, agent, processfunc, video, num_episodes, json_path):
                 obs_sensor, obs_direction, reward, done, done_reason = env.step(a_in)
                 step_taken += 1
                 episode_reward += reward
+                # print(reward)
             video.save()
             if done_reason == 'target':
                 success += 1

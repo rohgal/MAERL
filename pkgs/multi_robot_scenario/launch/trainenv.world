@@ -96,45 +96,6 @@
       </plugin>
     </actor>
 
-    <actor name="actor3">
-      <pose>5 4 1.25 0 0 0</pose>
-      <skin>
-        <filename>walk-green.dae</filename>
-        <scale>1.2</scale>
-      </skin>
-      <animation name="walking">
-        <filename>walk-green.dae</filename>
-        <scale>1.000000</scale>
-        <interpolate_x>true</interpolate_x>
-      </animation>
-
-      <plugin name="actor3_plugin" filename="libPedestrianSFMPlugin.so">
-        <velocity>0.5</velocity>
-        <radius>0.4</radius>
-        <animation_factor>5.1</animation_factor>
-        <people_distance>6.0</people_distance>
-        <!-- weights -->
-        <goal_weight>100.0</goal_weight>
-        <obstacle_weight>90.0</obstacle_weight> <!--10.0-->
-        <social_weight>15</social_weight> <!--2.1-->
-        <group_gaze_weight>3.0</group_gaze_weight>
-        <group_coh_weight>2.0</group_coh_weight>
-        <group_rep_weight>1.0</group_rep_weight>
-        <ignore_obstacles>
-          <model>r1</model>
-          <model>trainenv_0</model>
-          <model>ground_plane</model>
-        </ignore_obstacles>
-        <trajectory>
-          <cyclic>true</cyclic>
-          <waypoint>5 4 1.25</waypoint>
-          <waypoint>1 3 1.25</waypoint>
-          <waypoint>1 0 1.25</waypoint>
-          <waypoint>4 1 1.25</waypoint>
-        </trajectory>
-      </plugin>
-    </actor>
-
     <model name='ground_plane'>
       <static>1</static>
       <link name='link'>

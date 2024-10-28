@@ -27,7 +27,7 @@ def parse_args():
     parser.add_argument('--replay_buffer_capacity', default=100000, type=int)
     # train
     parser.add_argument('--agent', default='mae_sac', type=str)
-    parser.add_argument('--init_steps', default=10000, type=int)
+    parser.add_argument('--init_steps', default=4, type=int)
     parser.add_argument('--num_train_steps', default=1000000, type=int)
     parser.add_argument('--batch_size', default=4, type=int)
     parser.add_argument('--detach_encoder', default=False, action='store_true')
@@ -61,7 +61,7 @@ def parse_args():
     parser.add_argument('--log_interval', default=50, type=int)
     parser.add_argument('--seed', default=1, type=int)
     parser.add_argument('--work_dir', default='pytorch_models', type=str)
-    parser.add_argument('--modelname_tocontinue', default='sac_pure_small_batch_1.3', type=str)
+    parser.add_argument('--modelname_tocontinue', default='MAERL-10-23-16-14-01-b4-s1', type=str)
     args = parser.parse_args()
     return args
 
@@ -172,7 +172,7 @@ def main():
             log_interval=args.log_interval,
             detach_encoder=args.detach_encoder,
         )
-    agent.load(args.work_dir, args.modelname_tocontinue, 300000)
+    agent.load(args.work_dir, args.modelname_tocontinue, 500000)
 
     L = Logger(work_dir, use_tb=args.save_tb)
 
@@ -204,13 +204,13 @@ def main():
             L.log('train/episode', episode, step)
 
         # sample action for data collection
-        if step < args.init_steps:
-            action = env.action_space.sample()
-            if step > args.batch_size:
-                agent.update(replay_buffer, L, step)
-        else:
-            with utils.eval_mode(agent):
-                action = agent.sample_action(obs_sensor, obs_direction, processfunc=replay_buffer.batched_points_to_voxels)
+        # if step < args.init_steps:
+        #     action = env.action_space.sample()
+        #     if step > args.batch_size:
+        #         agent.update(replay_buffer, L, step)
+
+        with utils.eval_mode(agent):
+            action = agent.sample_action(obs_sensor, obs_direction, processfunc=replay_buffer.batched_points_to_voxels)
 
         a_in = [1.3*((action[0] + 1) / 2), action[1]]
 

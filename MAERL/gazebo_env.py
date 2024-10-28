@@ -34,7 +34,7 @@ class GazeboEnv:
                                 dtype=np.float32)
         self._max_episode_steps = 800
         self.episode_step = 0
-        self.total_step = 0
+        self.total_step = 500000
 
         self.goal_fixed_candidates1 = [(-0.23, -1.02),(-0.31, -2.43),(-0.37, -4.21)]
         self.goal_fixed_candidates2 = [(-1.73, 0.237),(-1.8, -1.47),(-1.75, -3.86)]
@@ -130,14 +130,7 @@ class GazeboEnv:
                 elif -1.1 > self.robot_x:
                     self.goal_x = self.goal_fixed_candidates2[0][0]
                     self.goal_y = self.goal_fixed_candidates2[0][1]
-            elif 200000 < self.total_step < 300000:
-                if self.robot_x > -1.1:
-                    self.goal_x = self.goal_fixed_candidates1[1][0]
-                    self.goal_y = self.goal_fixed_candidates1[1][1]
-                elif -1.1 > self.robot_x:
-                    self.goal_x = self.goal_fixed_candidates2[1][0]
-                    self.goal_y = self.goal_fixed_candidates2[1][1]
-            elif 300000 < self.total_step < 400000:
+            elif 200000 < self.total_step < 400000:
                 if self.robot_x > -1.1:
                     self.goal_x = self.goal_fixed_candidates1[1][0]
                     self.goal_y = self.goal_fixed_candidates1[1][1]
@@ -151,9 +144,32 @@ class GazeboEnv:
                 elif -1.1 > self.robot_x:
                     self.goal_x = self.goal_fixed_candidates2[2][0]
                     self.goal_y = self.goal_fixed_candidates2[2][1]
-            else:
+            elif 500000 < self.total_step < 600000:
+                if self.robot_x > -1.1:
+                    self.goal_x = self.goal_fixed_candidates2[2][0]
+                    self.goal_y = self.goal_fixed_candidates2[2][1]
+                elif -1.1 > self.robot_x:
+                    self.goal_x = self.goal_fixed_candidates1[2][0]
+                    self.goal_y = self.goal_fixed_candidates1[2][1]
+            elif 600000 < self.total_step < 700000:
+                if self.robot_x > -1.1:
+                    self.goal_x = self.goal_fixed_candidates2[1][0]
+                    self.goal_y = self.goal_fixed_candidates2[1][1]
+                elif -1.1 > self.robot_x:
+                    self.goal_x = self.goal_fixed_candidates1[1][0]
+                    self.goal_y = self.goal_fixed_candidates1[1][1]
+            elif 700000 < self.total_step < 800000:
+                if self.robot_x > -1.1:
+                    self.goal_x = self.goal_fixed_candidates2[0][0]
+                    self.goal_y = self.goal_fixed_candidates2[0][1]
+                elif -1.1 > self.robot_x:
+                    self.goal_x = self.goal_fixed_candidates1[0][0]
+                    self.goal_y = self.goal_fixed_candidates1[0][1]
+            elif 800000 < self.total_step < 900000:
                 self.set_goal(min_distance=0.43, safe_dist=0.5, goal_finite=True)
-                
+            else:
+                self.set_goal(min_distance=0.43, safe_dist=0.5, goal_finite=False)
+
             self.propagate_sim()
 
             laser_state = self.get_laser_obs()

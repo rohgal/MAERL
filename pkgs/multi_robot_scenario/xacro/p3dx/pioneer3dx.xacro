@@ -9,8 +9,8 @@
   <xacro:pioneer3dx_body name="chassis" parent="base_link" meshes="package://gazebo_plugins/test/multi_robot_scenario/meshes/p3dx"/>
 
   <!-- Laser -->
-  <!-- <xacro:include filename="$(find multi_robot_scenario)/xacro/laser/hokuyo.xacro"/>
-  <xacro:laser name="front_laser" parent="chassis" xyz="0.125 0 0.25" rpy="0 0 0" meshes="package://gazebo_plugins/test/multi_robot_scenario/meshes/laser"/> -->
+  <!-- <xacro:include filename="$(find multi_robot_scenario)/xacro/laser/hokuyo_gpu.xacro"/>
+  <xacro:laser name="front_laser" parent="chassis" xyz="0.125 0 0.30" rpy="0 0 0" meshes="package://gazebo_plugins/test/multi_robot_scenario/meshes/laser"/> -->
 
   <!-- GPU Laser -->
   <!-- <xacro:include filename="$(find multi_robot_scenario)/xacro/laser/hokuyo_gpu.xacro"/>
