@@ -130,42 +130,42 @@ class GazeboEnv:
                 elif -1.1 > self.robot_x:
                     self.goal_x = self.goal_fixed_candidates2[0][0]
                     self.goal_y = self.goal_fixed_candidates2[0][1]
-            elif 200000 < self.total_step < 400000:
+            elif 200000 <= self.total_step < 400000:
                 if self.robot_x > -1.1:
                     self.goal_x = self.goal_fixed_candidates1[1][0]
                     self.goal_y = self.goal_fixed_candidates1[1][1]
                 elif -1.1 > self.robot_x:
                     self.goal_x = self.goal_fixed_candidates2[1][0]
                     self.goal_y = self.goal_fixed_candidates2[1][1]
-            elif 400000 < self.total_step < 500000:
+            elif 400000 <= self.total_step < 500000:
                 if self.robot_x > -1.1:
                     self.goal_x = self.goal_fixed_candidates1[2][0]
                     self.goal_y = self.goal_fixed_candidates1[2][1]
                 elif -1.1 > self.robot_x:
                     self.goal_x = self.goal_fixed_candidates2[2][0]
                     self.goal_y = self.goal_fixed_candidates2[2][1]
-            elif 500000 < self.total_step < 600000:
+            elif 500000 <= self.total_step < 700000:
                 if self.robot_x > -1.1:
                     self.goal_x = self.goal_fixed_candidates2[2][0]
                     self.goal_y = self.goal_fixed_candidates2[2][1]
                 elif -1.1 > self.robot_x:
                     self.goal_x = self.goal_fixed_candidates1[2][0]
                     self.goal_y = self.goal_fixed_candidates1[2][1]
-            elif 600000 < self.total_step < 700000:
+            elif 700000 <= self.total_step < 900000:
                 if self.robot_x > -1.1:
                     self.goal_x = self.goal_fixed_candidates2[1][0]
                     self.goal_y = self.goal_fixed_candidates2[1][1]
                 elif -1.1 > self.robot_x:
                     self.goal_x = self.goal_fixed_candidates1[1][0]
                     self.goal_y = self.goal_fixed_candidates1[1][1]
-            elif 700000 < self.total_step < 800000:
+            elif 900000 <= self.total_step < 1000000:
                 if self.robot_x > -1.1:
                     self.goal_x = self.goal_fixed_candidates2[0][0]
                     self.goal_y = self.goal_fixed_candidates2[0][1]
                 elif -1.1 > self.robot_x:
                     self.goal_x = self.goal_fixed_candidates1[0][0]
                     self.goal_y = self.goal_fixed_candidates1[0][1]
-            elif 800000 < self.total_step < 900000:
+            elif 1000000 <= self.total_step < 1100000:
                 self.set_goal(min_distance=0.43, safe_dist=0.5, goal_finite=True)
             else:
                 self.set_goal(min_distance=0.43, safe_dist=0.5, goal_finite=False)

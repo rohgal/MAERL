@@ -48,7 +48,7 @@ def parse_args():
     parser.add_argument('--encoder_feature_dim', default=75, type=int)
     # sac
     parser.add_argument('--discount', default=0.99, type=float)
-    parser.add_argument('--init_temperature', default=0.1, type=float)
+    parser.add_argument('--init_temperature', default=0.02, type=float)
     parser.add_argument('--alpha_lr', default=1e-5, type=float)
     parser.add_argument('--alpha_beta', default=0.5, type=float)
     # misc
