@@ -34,7 +34,7 @@ class GazeboEnv:
                                 dtype=np.float32)
         self._max_episode_steps = 800
         self.episode_step = 0
-        self.total_step = 500000
+        self.total_step = 700000
 
         self.goal_fixed_candidates1 = [(-0.23, -1.02),(-0.31, -2.43),(-0.37, -4.21)]
         self.goal_fixed_candidates2 = [(-1.73, 0.237),(-1.8, -1.47),(-1.75, -3.86)]
@@ -151,22 +151,20 @@ class GazeboEnv:
                 elif -1.1 > self.robot_x:
                     self.goal_x = self.goal_fixed_candidates1[2][0]
                     self.goal_y = self.goal_fixed_candidates1[2][1]
-            elif 700000 <= self.total_step < 900000:
+            elif 700000 <= self.total_step < 1000000:
                 if self.robot_x > -1.1:
                     self.goal_x = self.goal_fixed_candidates2[1][0]
                     self.goal_y = self.goal_fixed_candidates2[1][1]
                 elif -1.1 > self.robot_x:
                     self.goal_x = self.goal_fixed_candidates1[1][0]
                     self.goal_y = self.goal_fixed_candidates1[1][1]
-            elif 900000 <= self.total_step < 1000000:
+            elif 1000000 <= self.total_step < 1200000:
                 if self.robot_x > -1.1:
                     self.goal_x = self.goal_fixed_candidates2[0][0]
                     self.goal_y = self.goal_fixed_candidates2[0][1]
                 elif -1.1 > self.robot_x:
                     self.goal_x = self.goal_fixed_candidates1[0][0]
                     self.goal_y = self.goal_fixed_candidates1[0][1]
-            elif 1000000 <= self.total_step < 1100000:
-                self.set_goal(min_distance=0.43, safe_dist=0.5, goal_finite=True)
             else:
                 self.set_goal(min_distance=0.43, safe_dist=0.5, goal_finite=False)
 

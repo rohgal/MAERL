@@ -34,7 +34,7 @@ def evaluate(env, agent, processfunc, video, num_episodes, json_path):
         success, collision, timeout = 0, 0, 0
         suc_index, col_index, to_index = [], [], []
         for i in range(num_episodes):
-            obs_sensor, obs_direction = env.reset(evaluation=True)
+            obs_sensor, obs_direction = env.reset(evaluation=False)
             step_taken = 0
             done = False
             done_reason = None
