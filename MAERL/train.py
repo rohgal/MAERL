@@ -61,7 +61,7 @@ def parse_args():
     parser.add_argument('--log_interval', default=50, type=int)
     parser.add_argument('--seed', default=1, type=int)
     parser.add_argument('--work_dir', default='pytorch_models', type=str)
-    parser.add_argument('--modelname_tocontinue', default='training2', type=str)
+    parser.add_argument('--modelname_tocontinue', default='training3', type=str)
     args = parser.parse_args()
     return args
 
@@ -172,7 +172,7 @@ def main():
             log_interval=args.log_interval,
             detach_encoder=args.detach_encoder,
         )
-    agent.load(args.work_dir, args.modelname_tocontinue, 550000)
+    agent.load(args.work_dir, args.modelname_tocontinue, 400000)
 
     L = Logger(work_dir, use_tb=args.save_tb)
 
