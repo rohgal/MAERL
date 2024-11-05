@@ -34,11 +34,11 @@ class GazeboEnv:
                                 dtype=np.float32)
         self._max_episode_steps = 800
         self.episode_step = 0
-        self.total_step = 1200000
+        self.total_step = 1000000
 
         self.goal_fixed_candidates1 = [(-0.23, -1.02),(-0.31, -2.43),(-0.37, -4.21)]
         self.goal_fixed_candidates2 = [(-1.73, 0.237),(-1.8, -1.47),(-1.75, -3.86)]
-        self.goal_fixed_candidates3 = [(-0.152, 0.305),(-3.7, 0.43)]
+        self.goal_fixed_candidates3 = [(-0.152, 0.105),(-3.0, 0.43)]
 
         self.robot_x = None
         self.robot_y = None

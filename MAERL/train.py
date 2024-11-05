@@ -172,7 +172,7 @@ def main():
             log_interval=args.log_interval,
             detach_encoder=args.detach_encoder,
         )
-    agent.load(args.work_dir, args.modelname_tocontinue, 400000)
+    agent.load(args.work_dir, args.modelname_tocontinue, 300000)
 
     L = Logger(work_dir, use_tb=args.save_tb)
 
@@ -191,10 +191,10 @@ def main():
         if done:
             if step > 0:
                 L.log('train/duration', time.time() - start_time, step)
-                L.dump(step)
                 start_time = time.time()
             if step >= args.init_steps:
                 L.log('train/episode_reward', episode_reward, step)
+                L.dump(step)
 
             obs_sensor, obs_direction = env.reset()
             done = False
